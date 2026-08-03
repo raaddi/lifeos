@@ -32,6 +32,13 @@ type Mission = {
   duration: string;
 };
 
+type Routine = {
+  id: string;
+  label: string;
+  time: string;
+  done: boolean;
+};
+
 type Profile = {
   name: string;
   height: string;
@@ -44,6 +51,7 @@ type SavedState = {
   profile: Profile;
   missions: Mission[];
   notes: string[];
+  routines?: Routine[];
 };
 
 const areas: LifeArea[] = [
@@ -65,6 +73,12 @@ const initialMissions: Mission[] = [
   { id: "mission-3", title: "Zadbaj o ruch albo regenerację", area: "sport", done: false, duration: "30 min" },
 ];
 
+const initialRoutines: Routine[] = [
+  { id: "routine-1", label: "Poranny start bez telefonu", time: "rano", done: false },
+  { id: "routine-2", label: "Ruch lub trening", time: "30 min", done: false },
+  { id: "routine-3", label: "Przegląd dnia i wyciszenie", time: "wieczór", done: false },
+];
+
 const initialProfile: Profile = {
   name: "Użytkownik",
   height: "175",
@@ -74,9 +88,9 @@ const initialProfile: Profile = {
 };
 
 const topTabs: Array<{ id: AppTab; label: string }> = [
-  { id: "lobby", label: "Pulpit" },
-  { id: "plan", label: "Plan" },
-  { id: "progress", label: "Postęp" },
+  { id: "lobby", label: "Dzisiaj" },
+  { id: "plan", label: "Plan tygodnia" },
+  { id: "progress", label: "Obszary" },
   { id: "notes", label: "Notatki" },
 ];
 
@@ -96,6 +110,7 @@ export default function LifeOS() {
   const [activeTab, setActiveTab] = useState<AppTab>("lobby");
   const [selectedArea, setSelectedArea] = useState<AreaId>("business");
   const [missions, setMissions] = useState<Mission[]>(initialMissions);
+  const [routines, setRoutines] = useState<Routine[]>(initialRoutines);
   const [profile, setProfile] = useState<Profile>(initialProfile);
   const [draftProfile, setDraftProfile] = useState<Profile>(initialProfile);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -117,6 +132,7 @@ export default function LifeOS() {
           }
           if (Array.isArray(saved.missions)) setMissions(saved.missions);
           if (Array.isArray(saved.notes)) setNotes(saved.notes);
+          if (Array.isArray(saved.routines)) setRoutines(saved.routines);
         }
       } catch {
         // Keep useful defaults when local storage is unavailable.
@@ -129,8 +145,8 @@ export default function LifeOS() {
 
   useEffect(() => {
     if (!ready) return;
-    window.localStorage.setItem("lifeos-lobby-v2", JSON.stringify({ profile, missions, notes }));
-  }, [missions, notes, profile, ready]);
+    window.localStorage.setItem("lifeos-lobby-v2", JSON.stringify({ profile, missions, notes, routines }));
+  }, [missions, notes, profile, ready, routines]);
 
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
@@ -142,14 +158,15 @@ export default function LifeOS() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, []);
 
-  const currentArea = areaById(selectedArea);
   const finished = missions.filter((mission) => mission.done).length;
-  const dailyProgress = missions.length ? Math.round((finished / missions.length) * 100) : 0;
   const level = 1 + finished;
-  const overallBalance = Math.round(areas.reduce((sum, area) => sum + area.score, 0) / areas.length);
 
   function toggleMission(id: string) {
     setMissions((items) => items.map((mission) => mission.id === id ? { ...mission, done: !mission.done } : mission));
+  }
+
+  function toggleRoutine(id: string) {
+    setRoutines((items) => items.map((routine) => routine.id === id ? { ...routine, done: !routine.done } : routine));
   }
 
   function addMission(event: FormEvent) {
@@ -198,9 +215,9 @@ export default function LifeOS() {
       <aside className="game-dock" aria-label="Skróty">
         <div className="dock-line" />
         {[
-          { tab: "lobby" as AppTab, icon: "⌂", label: "Pulpit" },
-          { tab: "plan" as AppTab, icon: "▦", label: "Plan" },
-          { tab: "progress" as AppTab, icon: "◫", label: "Postęp" },
+          { tab: "lobby" as AppTab, icon: "⌂", label: "Dzisiaj" },
+          { tab: "plan" as AppTab, icon: "▦", label: "Tydzień" },
+          { tab: "progress" as AppTab, icon: "◫", label: "Obszary" },
           { tab: "notes" as AppTab, icon: "≡", label: "Notatki" },
         ].map((item) => (
           <button key={item.tab} type="button" className={activeTab === item.tab ? "active" : ""} onClick={() => setActiveTab(item.tab)} title={item.label}>
@@ -211,67 +228,31 @@ export default function LifeOS() {
         <div className="dock-level"><span>LVL</span><strong>{String(level).padStart(2, "0")}</strong></div>
       </aside>
 
-      <main className={`game-main ${activeTab === "lobby" ? "has-intel" : ""}`}>
+      <main className="game-main">
         {activeTab === "lobby" && (
-          <Lobby
+          <Dashboard
             profile={profile}
-            setProfile={setProfile}
             selectedArea={selectedArea}
             setSelectedArea={setSelectedArea}
             setProfileOpen={setProfileOpen}
+            missions={missions}
+            toggleMission={toggleMission}
+            missionDraft={missionDraft}
+            setMissionDraft={setMissionDraft}
+            addMission={addMission}
+            notes={notes}
+            noteDraft={noteDraft}
+            setNoteDraft={setNoteDraft}
+            addNote={addNote}
+            routines={routines}
+            toggleRoutine={toggleRoutine}
+            openPlan={() => setActiveTab("plan")}
           />
         )}
         {activeTab === "plan" && <PlanView missions={missions} toggleMission={toggleMission} />}
         {activeTab === "progress" && <ProgressView selectedArea={selectedArea} setSelectedArea={setSelectedArea} />}
         {activeTab === "notes" && <NotesView notes={notes} draft={noteDraft} setDraft={setNoteDraft} addNote={addNote} />}
       </main>
-
-      {activeTab === "lobby" && (
-        <aside className="intel-panel">
-          <section className="command-brief">
-            <div className="brief-heading">
-              <span className="profile-monogram">{profile.name.slice(0, 1).toUpperCase()}</span>
-              <div><span className="micro-label">Aktywny profil</span><h2>{profile.name}</h2><p>{profile.mainFocus}</p></div>
-              <button type="button" onClick={() => { setDraftProfile(profile); setProfileOpen(true); }}>Ustaw</button>
-            </div>
-            <div className="brief-stats">
-              <span><small>Balans</small><strong>{overallBalance}</strong></span>
-              <span><small>Wykonane</small><strong>{finished}/{missions.length}</strong></span>
-              <span><small>Poziom</small><strong>{String(level).padStart(2, "0")}</strong></span>
-            </div>
-          </section>
-
-          <section className="focus-card" style={{ "--accent": currentArea.color } as CSSProperties}>
-            <div className="focus-kicker"><span>Aktywny obszar</span><strong>{currentArea.score}<small>/100</small></strong></div>
-            <div className="focus-title"><span>{currentArea.icon}</span><h2>{currentArea.label}</h2></div>
-            <p>{currentArea.goal}</p>
-            <div className="next-move"><span>Następny ruch</span><strong>{currentArea.question}</strong></div>
-            <div className="focus-measure"><span>Mierz przez</span><strong>{currentArea.metric}</strong></div>
-          </section>
-
-          <section className="missions-panel">
-            <div className="panel-title"><div><span className="micro-label">Dzisiaj</span><h2>Plan minimum</h2></div><span>{dailyProgress}%</span></div>
-            <div className="mission-progress"><i style={{ width: `${dailyProgress}%` }} /></div>
-            <div className="mission-list">
-              {missions.slice(0, 4).map((mission, index) => {
-                const missionArea = areaById(mission.area);
-                return (
-                  <button type="button" key={mission.id} className={mission.done ? "mission done" : "mission"} onClick={() => toggleMission(mission.id)}>
-                    <span className="mission-index">{String(index + 1).padStart(2, "0")}</span>
-                    <i className="mission-check">{mission.done ? "✓" : ""}</i>
-                    <span><strong>{mission.title}</strong><small><i style={{ background: missionArea.color }} />{missionArea.label} · {mission.duration}</small></span>
-                  </button>
-                );
-              })}
-            </div>
-            <form className="mission-add" onSubmit={addMission}>
-              <label className="sr-only" htmlFor="new-mission">Dodaj misję</label>
-              <input id="new-mission" value={missionDraft} onChange={(event) => setMissionDraft(event.target.value)} placeholder="Dodaj konkretny krok" />
-              <button type="submit" aria-label="Dodaj misję">+</button>
-            </form>
-          </section>
-        </aside>
-      )}
 
       <nav className="mobile-game-nav" aria-label="Nawigacja mobilna">
         {topTabs.map((tab) => <button key={tab.id} type="button" className={activeTab === tab.id ? "active" : ""} onClick={() => setActiveTab(tab.id)}><span>{tab.id === "lobby" ? "⌂" : tab.id === "plan" ? "▦" : tab.id === "progress" ? "◫" : "≡"}</span>{tab.label}</button>)}
@@ -305,67 +286,159 @@ export default function LifeOS() {
   );
 }
 
-function Lobby({ profile, setProfile, selectedArea, setSelectedArea, setProfileOpen }: { profile: Profile; setProfile: (profile: Profile) => void; selectedArea: AreaId; setSelectedArea: (id: AreaId) => void; setProfileOpen: (open: boolean) => void }) {
+type DashboardProps = {
+  profile: Profile;
+  selectedArea: AreaId;
+  setSelectedArea: (id: AreaId) => void;
+  setProfileOpen: (open: boolean) => void;
+  missions: Mission[];
+  toggleMission: (id: string) => void;
+  missionDraft: string;
+  setMissionDraft: (value: string) => void;
+  addMission: (event: FormEvent) => void;
+  notes: string[];
+  noteDraft: string;
+  setNoteDraft: (value: string) => void;
+  addNote: (event: FormEvent) => void;
+  routines: Routine[];
+  toggleRoutine: (id: string) => void;
+  openPlan: () => void;
+};
+
+function Dashboard({
+  profile,
+  selectedArea,
+  setSelectedArea,
+  setProfileOpen,
+  missions,
+  toggleMission,
+  missionDraft,
+  setMissionDraft,
+  addMission,
+  notes,
+  noteDraft,
+  setNoteDraft,
+  addNote,
+  routines,
+  toggleRoutine,
+  openPlan,
+}: DashboardProps) {
   const height = Number(profile.height) || 175;
   const weight = Number(profile.weight) || 70;
   const bodyFat = Number(profile.bodyFat) || 18;
   const composition = bodyComposition(height, weight, bodyFat);
   const overallBalance = Math.round(areas.reduce((sum, area) => sum + area.score, 0) / areas.length);
-  const weakestArea = [...areas].sort((first, second) => first.score - second.score)[0];
-
-  function updateBody(field: "height" | "weight" | "bodyFat", value: string) {
-    setProfile({ ...profile, [field]: value });
-  }
+  const finished = missions.filter((mission) => mission.done).length;
+  const progress = missions.length ? Math.round((finished / missions.length) * 100) : 0;
+  const routinesDone = routines.filter((routine) => routine.done).length;
+  const activeArea = areaById(selectedArea);
+  const nextMission = missions.find((mission) => !mission.done);
+  const weekDays = ["Pon", "Wt", "Śr", "Czw", "Pt", "Sob", "Ndz"];
+  const todayIndex = (new Date().getDay() + 6) % 7;
 
   return (
-    <section className="command-lobby">
-      <header className="lobby-heading">
-        <div><span className="micro-label">Centrum operacyjne / {polishDate()}</span><h1>Ty ustawiasz kierunek.</h1><p>Jedno spojrzenie na sytuację. Jeden obszar uwagi. Kilka konkretnych ruchów.</p></div>
-        <div className="balance-readout"><span>Balans systemu</span><strong>{overallBalance}<small>/100</small></strong><i><em style={{ width: `${overallBalance}%` }} /></i></div>
+    <section className="life-dashboard">
+      <header className="dashboard-heading">
+        <div>
+          <span className="micro-label">Twój LifeOS / {polishDate()}</span>
+          <h1>Wszystko, co ważne. W jednym miejscu.</h1>
+          <p>Plan dnia, szybkie notatki, rutyny i pełny obraz życia — bez trzymania wszystkiego w głowie.</p>
+        </div>
+        <div className="dashboard-summary" aria-label="Podsumowanie dnia">
+          <span><small>Zadania</small><strong>{finished}/{missions.length}</strong></span>
+          <span><small>Rutyny</small><strong>{routinesDone}/{routines.length}</strong></span>
+          <span><small>Balans</small><strong>{overallBalance}</strong></span>
+        </div>
       </header>
 
-      <div className="lobby-grid">
-        <aside className="area-selector" aria-label="Dziedziny życia">
-          <div className="selector-heading"><div><span className="micro-label">Obszary życia</span><strong>Wybierz priorytet</strong></div><small>{areas.length}</small></div>
-          <div className="area-list">
-            {areas.map((area) => (
-              <button
-                key={area.id}
-                type="button"
-                className={selectedArea === area.id ? "area-row active" : "area-row"}
-                style={{ "--area-color": area.color, "--area-score": `${area.score}%` } as CSSProperties}
-                onClick={() => setSelectedArea(area.id)}
-                aria-pressed={selectedArea === area.id}
-              >
-                <span className="area-row-icon">{area.icon}</span>
-                <span className="area-row-copy"><strong>{area.label}</strong><small>{area.metric}</small><i><em /></i></span>
-                <b>{area.score}</b>
+      <div className="dashboard-grid">
+        <section className="dash-card today-card">
+          <div className="dash-card-heading">
+            <div><span className="micro-label">Dzisiaj</span><h2>Plan dnia</h2></div>
+            <div className="day-progress"><span>{progress}%</span><i><em style={{ width: `${progress}%` }} /></i></div>
+          </div>
+          <div className={nextMission ? "main-outcome" : "main-outcome complete"}>
+            <span>Najważniejszy następny ruch</span>
+            <strong>{nextMission?.title ?? "Plan minimum wykonany"}</strong>
+            <small>{nextMission ? `${areaById(nextMission.area).label} · ${nextMission.duration}` : "Możesz zakończyć dzień albo dodać kolejny krok."}</small>
+          </div>
+          <div className="dashboard-task-list">
+            {missions.map((mission) => {
+              const missionArea = areaById(mission.area);
+              return (
+                <button key={mission.id} type="button" className={mission.done ? "dashboard-task done" : "dashboard-task"} onClick={() => toggleMission(mission.id)}>
+                  <i className="task-check">{mission.done ? "✓" : ""}</i>
+                  <span><strong>{mission.title}</strong><small><i style={{ background: missionArea.color }} />{missionArea.label} · {mission.duration}</small></span>
+                  <b>{mission.done ? "Gotowe" : "Do zrobienia"}</b>
+                </button>
+              );
+            })}
+          </div>
+          <form className="dashboard-add" onSubmit={addMission}>
+            <label className="sr-only" htmlFor="dashboard-mission">Dodaj zadanie</label>
+            <span style={{ "--capture-color": activeArea.color } as CSSProperties}>{activeArea.icon} {activeArea.label}</span>
+            <input id="dashboard-mission" value={missionDraft} onChange={(event) => setMissionDraft(event.target.value)} placeholder="Dodaj następny konkretny krok…" />
+            <button type="submit">Dodaj</button>
+          </form>
+        </section>
+
+        <section className="dash-card capture-card">
+          <div className="dash-card-heading"><div><span className="micro-label">Inbox</span><h2>Szybki zapis</h2></div><span className="card-count">{notes.length}</span></div>
+          <form className="quick-note" onSubmit={addNote}>
+            <label className="sr-only" htmlFor="dashboard-note">Szybka notatka</label>
+            <textarea id="dashboard-note" value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Pomysł, decyzja, rzecz do sprawdzenia…" />
+            <div><span>Zapisz teraz. Uporządkuj później.</span><button type="submit">Zapisz notatkę</button></div>
+          </form>
+          <div className="recent-notes">
+            <span className="micro-label">Ostatnie notatki</span>
+            {notes.length ? notes.slice(0, 3).map((note, index) => <article key={`${note}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><p>{note}</p></article>) : <div className="notes-empty">Inbox jest pusty. Pierwsza myśl pojawi się tutaj.</div>}
+          </div>
+        </section>
+
+        <section className="dash-card week-card">
+          <div className="dash-card-heading"><div><span className="micro-label">Perspektywa</span><h2>Ten tydzień</h2></div><button type="button" onClick={openPlan}>Otwórz pełny plan ↗</button></div>
+          <div className="week-strip">
+            {weekDays.map((day, index) => (
+              <div key={day} className={index === todayIndex ? "today" : ""}>
+                <span>{day}</span><strong>{index === todayIndex ? missions.length : "—"}</strong><small>{index === todayIndex ? "zadań" : "bez planu"}</small>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="dash-card routines-card">
+          <div className="dash-card-heading"><div><span className="micro-label">Powtarzalność</span><h2>Rutyny dnia</h2></div><span className="card-count">{routinesDone}/{routines.length}</span></div>
+          <div className="routine-list">
+            {routines.map((routine) => (
+              <button key={routine.id} type="button" className={routine.done ? "routine-row done" : "routine-row"} onClick={() => toggleRoutine(routine.id)}>
+                <i>{routine.done ? "✓" : ""}</i><span><strong>{routine.label}</strong><small>{routine.time}</small></span>
               </button>
             ))}
           </div>
-          <div className="selector-footer"><span>Największa rezerwa</span><strong><i style={{ background: weakestArea.color }} />{weakestArea.label} · {weakestArea.score}/100</strong></div>
-        </aside>
+        </section>
 
-        <section className="operator-stage" aria-label="Model użytkownika 3D">
-          <div className="operator-toolbar">
-            <div><span className="operator-state"><i /> MODEL AKTYWNY</span><strong>{profile.name}</strong><small>{height} cm · {weight} kg · {bodyFat}% BF</small></div>
-            <button type="button" onClick={() => setProfileOpen(true)}>Edytuj profil <span>↗</span></button>
+        <section className="dash-card areas-card">
+          <div className="dash-card-heading"><div><span className="micro-label">Pełny obraz</span><h2>Obszary życia</h2></div><span className="selected-area-label"><i style={{ background: activeArea.color }} />Priorytet: {activeArea.label}</span></div>
+          <div className="dashboard-areas">
+            {areas.map((area) => (
+              <button key={area.id} type="button" className={selectedArea === area.id ? "active" : ""} style={{ "--area-color": area.color, "--area-score": `${area.score}%` } as CSSProperties} onClick={() => setSelectedArea(area.id)}>
+                <span>{area.icon}</span><div><strong>{area.label}</strong><i><em /></i></div><b>{area.score}</b>
+              </button>
+            ))}
           </div>
-          <div className="operator-grid" aria-hidden="true" />
-          <Avatar3D heightCm={height} weightKg={weight} bodyFat={bodyFat} />
+        </section>
 
-          <section className="body-console" aria-label="Parametry ciała">
-            <div className="body-console-stats">
-              <span><small>Masa beztłuszczowa</small><strong>{composition.leanMass.toFixed(1)} kg</strong></span>
-              <span><small>FFMI</small><strong>{composition.ffmi.toFixed(1)}</strong></span>
-              <span><small>Muskulatura</small><strong>{Math.round(composition.muscle * 100)}%</strong></span>
-            </div>
-            <div className="body-tuners">
-              <label><span>Wzrost <strong>{height} cm</strong></span><input type="range" min="145" max="210" step="1" value={height} onChange={(event) => updateBody("height", event.target.value)} /></label>
-              <label><span>Waga <strong>{weight} kg</strong></span><input type="range" min="40" max="160" step="1" value={weight} onChange={(event) => updateBody("weight", event.target.value)} /></label>
-              <label><span>Body fat <strong>{bodyFat}%</strong></span><input type="range" min="5" max="45" step="1" value={bodyFat} onChange={(event) => updateBody("bodyFat", event.target.value)} /></label>
-            </div>
-          </section>
+        <section className="dash-card profile-card">
+          <div className="dash-card-heading"><div><span className="micro-label">Profil</span><h2>{profile.name}</h2></div><button type="button" onClick={() => setProfileOpen(true)}>Edytuj ↗</button></div>
+          <div className="profile-visual">
+            <Avatar3D heightCm={height} weightKg={weight} bodyFat={bodyFat} />
+          </div>
+          <div className="profile-numbers">
+            <span><small>Wzrost</small><strong>{height} cm</strong></span>
+            <span><small>Waga</small><strong>{weight} kg</strong></span>
+            <span><small>FFMI</small><strong>{composition.ffmi.toFixed(1)}</strong></span>
+          </div>
+          <p>Postać i parametry ciała są częścią profilu — nie centrum całego systemu.</p>
         </section>
       </div>
     </section>

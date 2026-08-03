@@ -9,22 +9,22 @@ export async function generateMetadata(): Promise<Metadata> {
   const origin = `${protocol}://${host}`;
 
   return {
-    title: "LifeOS — centrum dowodzenia",
-    description: "Uniwersalne centrum dowodzenia życiem, celami, energią i rozwojem.",
+    title: "LifeOS — całe życie w jednym miejscu",
+    description: "Plan dnia i tygodnia, notatki, rutyny oraz obszary życia w jednym uporządkowanym systemie.",
     metadataBase: new URL(origin),
     openGraph: {
-      title: "LifeOS — centrum dowodzenia",
-      description: "Twoja postać, dziedziny życia, plan i postęp w jednym intuicyjnym systemie.",
+      title: "LifeOS — całe życie w jednym miejscu",
+      description: "Plan, notatki, rutyny i pełny obraz życia bez trzymania wszystkiego w głowie.",
       type: "website",
       url: origin,
       locale: "pl_PL",
-      images: [{ url: `${origin}/og-command-center-v3.png`, width: 1672, height: 941, alt: "LifeOS — Ty ustawiasz kierunek" }],
+      images: [{ url: `${origin}/og-life-dashboard-v4.png`, width: 1672, height: 941, alt: "LifeOS — wszystko, co ważne, w jednym miejscu" }],
     },
     twitter: {
       card: "summary_large_image",
-      title: "LifeOS — centrum dowodzenia",
-      description: "Twoja postać, dziedziny życia, plan i postęp w jednym intuicyjnym systemie.",
-      images: [`${origin}/og-command-center-v3.png`],
+      title: "LifeOS — całe życie w jednym miejscu",
+      description: "Plan, notatki, rutyny i pełny obraz życia bez trzymania wszystkiego w głowie.",
+      images: [`${origin}/og-life-dashboard-v4.png`],
     },
   };
 }
