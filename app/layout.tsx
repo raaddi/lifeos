@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "LifeOS — centrum dowodzenia",
-  description: "Osobisty system zarządzania życiem, nauką i rozwojem DxComp.",
+  description: "Uniwersalne centrum dowodzenia życiem, celami, energią i rozwojem.",
   applicationName: "LifeOS",
   manifest: "/manifest.webmanifest",
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },

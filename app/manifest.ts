@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "LifeOS — centrum dowodzenia",
     short_name: "LifeOS",
-    description: "Osobisty system zarządzania życiem, nauką i rozwojem DxComp.",
+    description: "Uniwersalne centrum dowodzenia życiem, celami, energią i rozwojem.",
     start_url: "/",
     display: "standalone",
     background_color: "#f4f3ee",

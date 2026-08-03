@@ -10,21 +10,21 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: "LifeOS — centrum dowodzenia",
-    description: "Osobisty system zarządzania życiem, nauką i rozwojem DxComp.",
+    description: "Uniwersalne centrum dowodzenia życiem, celami, energią i rozwojem.",
     metadataBase: new URL(origin),
     openGraph: {
       title: "LifeOS — centrum dowodzenia",
-      description: "DxComp, studia, niemiecki i rutyny w jednym spokojnym systemie.",
+      description: "Twoja postać, dziedziny życia, plan i postęp w jednym intuicyjnym systemie.",
       type: "website",
       url: origin,
       locale: "pl_PL",
-      images: [{ url: `${origin}/og.png`, width: 1672, height: 941, alt: "LifeOS — centrum dowodzenia" }],
+      images: [{ url: `${origin}/og-lobby-v2.png`, width: 1672, height: 941, alt: "LifeOS — w centrum jesteś Ty" }],
     },
     twitter: {
       card: "summary_large_image",
       title: "LifeOS — centrum dowodzenia",
-      description: "DxComp, studia, niemiecki i rutyny w jednym spokojnym systemie.",
-      images: [`${origin}/og.png`],
+      description: "Twoja postać, dziedziny życia, plan i postęp w jednym intuicyjnym systemie.",
+      images: [`${origin}/og-lobby-v2.png`],
     },
   };
 }
