@@ -7,6 +7,7 @@ import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 
 type Avatar3DProps = {
   modelUrl: string;
+  compact?: boolean;
 };
 
 function HumanModel({ modelUrl }: Avatar3DProps) {
@@ -16,10 +17,10 @@ function HumanModel({ modelUrl }: Avatar3DProps) {
   return <primitive object={avatar} position={[0, 0, 0]} rotation={[0, Math.PI, 0]} />;
 }
 
-export default function Avatar3D({ modelUrl }: Avatar3DProps) {
+export default function Avatar3D({ modelUrl, compact = false }: Avatar3DProps) {
   return (
-    <div className="avatar-canvas" aria-label="Interaktywny, realistyczny model 3D postaci">
-      <Canvas shadows camera={{ position: [0, 1.05, 4.25], fov: 28, near: 0.1, far: 30 }} dpr={[1, 1.7]}>
+    <div className={`avatar-canvas${compact ? " avatar-canvas-compact" : ""}`} aria-label="Interaktywny model 3D postaci">
+      <Canvas shadows camera={{ position: [0, 1.05, compact ? 4.65 : 4.25], fov: 28, near: 0.1, far: 30 }} dpr={[1, compact ? 1.25 : 1.7]}>
         <ambientLight intensity={1.55} />
         <directionalLight position={[3.5, 5.5, 4]} intensity={3.2} color="#ffe4c8" castShadow shadow-mapSize={[1024, 1024]} />
         <directionalLight position={[-4, 3, 2]} intensity={2.1} color="#91a8bd" />
@@ -31,6 +32,8 @@ export default function Avatar3D({ modelUrl }: Avatar3DProps) {
         <OrbitControls
           makeDefault
           enablePan={false}
+          enableZoom={!compact}
+          enableRotate={!compact}
           enableDamping
           dampingFactor={0.07}
           minDistance={2.5}
@@ -40,8 +43,8 @@ export default function Avatar3D({ modelUrl }: Avatar3DProps) {
           target={[0, 0.88, 0]}
         />
       </Canvas>
-      <div className="model-gesture"><span>↔</span> przeciągnij, aby obracać <i>•</i> kółko lub gest, aby przybliżyć</div>
-      <div className="model-quality"><i /> pełna siatka 3D · rigowana postać</div>
+      {!compact && <div className="model-gesture"><span>↔</span> przeciągnij, aby obracać <i>•</i> kółko lub gest, aby przybliżyć</div>}
+      {!compact && <div className="model-quality"><i /> model zapisany w aplikacji · działa offline</div>}
     </div>
   );
 }

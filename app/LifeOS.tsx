@@ -74,7 +74,7 @@ const initialProfile: Profile = {
   height: "175",
   weight: "70",
   bodyFat: "18",
-  avatarUrl: "https://models.readyplayer.me/6185a4acfb622cf1cdc49348.glb?pose=A&quality=high",
+  avatarUrl: "/models/avatar-01.glb",
   hair: "ciemne, średniej długości",
   face: "naturalna, spokojna",
   mainFocus: "równowaga i rozwój",
@@ -93,6 +93,10 @@ function areaById(id: AreaId) {
 
 function uid() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function normalizeAvatarUrl(url?: string) {
+  return url === "/models/avatar-02.glb" ? url : "/models/avatar-01.glb";
 }
 
 function polishDate() {
@@ -118,7 +122,7 @@ export default function LifeOS() {
       if (raw) {
         const saved = JSON.parse(raw) as SavedState;
         if (saved.profile) {
-          const completeProfile = { ...initialProfile, ...saved.profile };
+          const completeProfile = { ...initialProfile, ...saved.profile, avatarUrl: normalizeAvatarUrl(saved.profile.avatarUrl) };
           setProfile(completeProfile);
           setDraftProfile(completeProfile);
         }
@@ -283,10 +287,10 @@ export default function LifeOS() {
       {profileOpen && (
         <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setProfileOpen(false); }}>
           <section className="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-title">
-            <div className="modal-header"><div><span className="micro-label">Personalizacja</span><h2 id="profile-title">Zbuduj swoją postać</h2></div><button type="button" onClick={() => setProfileOpen(false)} aria-label="Zamknij">×</button></div>
+            <div className="modal-header"><div><span className="micro-label">Personalizacja</span><h2 id="profile-title">Ustaw profil postaci</h2></div><button type="button" onClick={() => setProfileOpen(false)} aria-label="Zamknij">×</button></div>
             <div className="modal-body">
               <div className="avatar-preview">
-                <div className="avatar-preview-copy"><span>Model 3D</span><strong>Prawdziwa siatka człowieka</strong><p>Awatar ma twarz, włosy, ubranie, szkielet i pełną geometrię. Możesz utworzyć własny wygląd ze zdjęcia lub presetu.</p><button type="button" onClick={() => { setProfileOpen(false); setCreatorOpen(true); }}>Otwórz kreator wyglądu</button></div>
+                <div className="avatar-preview-copy"><span>Model 3D</span><strong>Pełna siatka postaci</strong><p>Awatar ma twarz, włosy, ubranie, szkielet i pełną geometrię. Modele są zapisane wewnątrz aplikacji, dlatego działają również bez zewnętrznego serwera.</p><button type="button" onClick={() => { setProfileOpen(false); setCreatorOpen(true); }}>Wybierz model 3D</button></div>
               </div>
               <form className="profile-form" onSubmit={saveProfile}>
                 <label><span>Nazwa postaci</span><input value={draftProfile.name} onChange={(e) => setDraftProfile({ ...draftProfile, name: e.target.value })} /></label>
@@ -336,7 +340,7 @@ function Lobby({ profile, setProfile, selectedArea, setSelectedArea, setCreatorO
       <div className="avatar-aura aura-one" /><div className="avatar-aura aura-two" />
       <div className="avatar-plate"><span>Aktywny profil</span><strong>{profile.name}</strong><small>{profile.height} cm · {profile.weight} kg</small></div>
       <Avatar3D modelUrl={profile.avatarUrl} />
-      <button className="customize-avatar" type="button" onClick={() => setCreatorOpen(true)}><span>◎</span> Stwórz własny wygląd</button>
+      <button className="customize-avatar" type="button" onClick={() => setCreatorOpen(true)}><span>◎</span> Wybierz model 3D</button>
       <section className="body-controls" aria-label="Parametry ciała">
         <div className="body-controls-title"><div><span className="micro-label">Dane sylwetki</span><strong>Profil i obliczenia</strong></div><span>PROFIL</span></div>
         <label><span>Wzrost <strong>{height} cm</strong></span><input type="range" min="145" max="210" step="1" value={height} onChange={(event) => updateBody("height", event.target.value)} /></label>

@@ -1,70 +1,37 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import Avatar3D from "./Avatar3D";
 
 type AvatarCreatorModalProps = {
   onAvatar: (url: string) => void;
   onClose: () => void;
 };
 
-const CREATOR_ORIGIN = "https://demo.readyplayer.me";
-
-type CreatorMessage = {
-  source?: string;
-  eventName?: string;
-  data?: { url?: string };
-};
+const presets = [
+  { url: "/models/avatar-01.glb", name: "Postać 01", detail: "pełna postać · model riggowany" },
+  { url: "/models/avatar-02.glb", name: "Postać 02", detail: "pełna postać · model riggowany" },
+];
 
 export default function AvatarCreatorModal({ onAvatar, onClose }: AvatarCreatorModalProps) {
-  const frameRef = useRef<HTMLIFrameElement>(null);
-
-  useEffect(() => {
-    function receiveMessage(event: MessageEvent) {
-      if (event.origin !== CREATOR_ORIGIN) return;
-
-      let message: CreatorMessage;
-      try {
-        message = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
-      } catch {
-        return;
-      }
-
-      if (message?.source !== "readyplayerme") return;
-
-      if (message.eventName === "v1.frame.ready") {
-        frameRef.current?.contentWindow?.postMessage(
-          JSON.stringify({ target: "readyplayerme", type: "subscribe", eventName: "v1.**" }),
-          CREATOR_ORIGIN,
-        );
-      }
-
-      if (message.eventName === "v1.avatar.exported" && message.data?.url) {
-        onAvatar(message.data.url);
-      }
-    }
-
-    window.addEventListener("message", receiveMessage);
-    return () => window.removeEventListener("message", receiveMessage);
-  }, [onAvatar]);
-
   return (
-    <div className="modal-backdrop creator-backdrop" role="presentation">
-      <section className="creator-modal" role="dialog" aria-modal="true" aria-labelledby="creator-title">
+    <div className="modal-backdrop creator-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className="creator-modal preset-creator" role="dialog" aria-modal="true" aria-labelledby="creator-title">
         <div className="modal-header">
-          <div><span className="micro-label">Realistyczna postać 3D</span><h2 id="creator-title">Stwórz swojego awatara</h2></div>
+          <div><span className="micro-label">Biblioteka postaci</span><h2 id="creator-title">Wybierz model zapisany w aplikacji</h2></div>
           <button type="button" onClick={onClose} aria-label="Zamknij">×</button>
         </div>
         <div className="creator-info">
-          <span>01. zdjęcie lub preset</span><i />
-          <span>02. twarz, włosy i ubranie</span><i />
-          <span>03. gotowy model 3D</span>
+          <span>Modele działają bez zewnętrznych serwerów</span><i />
+          <span>Obrót i zoom są dostępne na pulpicie</span>
         </div>
-        <iframe
-          ref={frameRef}
-          title="Kreator realistycznej postaci 3D"
-          src={`${CREATOR_ORIGIN}/avatar?frameApi&bodyType=fullbody`}
-          allow="camera *; microphone *; clipboard-write"
-        />
+        <div className="preset-grid">
+          {presets.map((preset) => (
+            <article className="preset-card" key={preset.url}>
+              <div className="preset-model"><Avatar3D modelUrl={preset.url} compact /></div>
+              <div className="preset-copy"><div><span>MODEL 3D</span><strong>{preset.name}</strong><small>{preset.detail}</small></div><button type="button" onClick={() => onAvatar(preset.url)}>Wybierz postać</button></div>
+            </article>
+          ))}
+        </div>
       </section>
     </div>
   );
