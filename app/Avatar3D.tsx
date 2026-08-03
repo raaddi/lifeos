@@ -13,7 +13,7 @@ type Avatar3DProps = {
   bodyFat: number;
 };
 
-const BODY_MODEL = "/models/parametric-body.glb?v=2";
+const BODY_MODEL = "/models/parametric-body.glb?v=3";
 
 function setMorph(mesh: Mesh, name: string, value: number) {
   const index = mesh.morphTargetDictionary?.[name];
@@ -40,6 +40,15 @@ function HumanModel({ heightCm, weightKg, bodyFat }: Avatar3DProps) {
     };
   }, [bodyFat, composition.muscle, heightCm]);
 
+  const clothing = useMemo(() => {
+    const heightScale = clampBodyValue(heightCm / 175, 0.83, 1.2);
+    return {
+      heightScale,
+      width: 1 + composition.fat * 0.24 + composition.mass * 0.1 + composition.muscle * 0.05,
+      depth: 1 + composition.fat * 0.32 + composition.mass * 0.08,
+    };
+  }, [composition.fat, composition.mass, composition.muscle, heightCm]);
+
   useEffect(() => {
     avatar.traverse((object: Object3D) => {
       const mesh = object as Mesh;
@@ -50,7 +59,32 @@ function HumanModel({ heightCm, weightKg, bodyFat }: Avatar3DProps) {
     });
   }, [avatar, morphs]);
 
-  return <primitive object={avatar} />;
+  return (
+    <group>
+      <primitive object={avatar} />
+      <mesh
+        position={[0, 0.887 * clothing.heightScale, 0.075]}
+        rotation={[Math.PI / 2, 0, 0]}
+        scale={[0.185 * clothing.width, 0.132 * clothing.depth, 0.18]}
+        castShadow
+      >
+        <torusGeometry args={[1, 0.065, 8, 48]} />
+        <meshStandardMaterial color="#171b1d" roughness={0.72} />
+      </mesh>
+      {[-1, 1].map((side) => (
+        <mesh
+          key={side}
+          position={[side * 0.092 * clothing.width, 0.627 * clothing.heightScale, 0.07]}
+          rotation={[Math.PI / 2, 0, 0]}
+          scale={[0.092 * clothing.width, 0.105 * clothing.depth, 0.13]}
+          castShadow
+        >
+          <torusGeometry args={[1, 0.06, 8, 36]} />
+          <meshStandardMaterial color="#171b1d" roughness={0.72} />
+        </mesh>
+      ))}
+    </group>
+  );
 }
 
 export default function Avatar3D(props: Avatar3DProps) {

@@ -113,7 +113,7 @@ function minMax(values) {
 
 const obj = parseObj(path.join(sourceDir, "base.obj"));
 const bodyFaces = obj.groups.get("body") ?? [];
-const visibleBodyFaces = bodyFaces.filter((face) => !isBoxerRegion(face, obj.positions));
+const visibleBodyFaces = bodyFaces;
 const boxerFaces = bodyFaces.filter((face) => isBoxerRegion(face, obj.positions));
 
 const shapeDefinitions = [
@@ -131,19 +131,32 @@ const maleDeltas = parseTarget(path.join(sourceDir, "male.target"), obj.position
 const muscleBaseDeltas = targetDeltas[0];
 const BASE_MUSCLE = 0.2;
 
-function relaxArms([x, y, z]) {
+function refineProportions([x, y, z]) {
+  const shoulderBand = Math.min(1, Math.max(0, (y - 3.05) / 0.95))
+    * Math.min(1, Math.max(0, (5.7 - y) / 0.9));
+  const torsoMask = Math.min(1, Math.max(0, (2.15 - Math.abs(x)) / 0.7));
+  return [x * (1 - shoulderBand * torsoMask * 0.038), y, z];
+}
+
+function relaxArms(point) {
+  const [x, y, z] = refineProportions(point);
   const side = Math.sign(x);
   const distance = Math.abs(x);
   if (!side || distance < 1.25 || y < 0.15) return [x, y, z];
   const blend = Math.min(1, Math.max(0, (distance - 1.25) / 0.95));
   const pivotX = side * 1.55;
   const pivotY = 4.15;
-  const angle = side * -0.27;
+  const angle = side * -0.43;
   const dx = x - pivotX;
   const dy = y - pivotY;
   const rotatedX = pivotX + dx * Math.cos(angle) - dy * Math.sin(angle);
   const rotatedY = pivotY + dx * Math.sin(angle) + dy * Math.cos(angle);
-  return [x + (rotatedX - x) * blend, y + (rotatedY - y) * blend, z];
+  const handBias = blend * blend;
+  return [
+    x + (rotatedX - x) * blend - side * 0.16 * handBias,
+    y + (rotatedY - y) * blend + 0.05 * handBias,
+    z + 0.13 * handBias,
+  ];
 }
 
 function makeShape(components = []) {
@@ -197,7 +210,13 @@ const denseShapes = rawShapes.map((shape) => sourceCorners.map(({ position, vari
   const point = shape[position];
   if (variant !== "boxer") return point;
   const boxerCenterZ = 0.075;
-  return [point[0] * 1.035, point[1], boxerCenterZ + (point[2] - boxerCenterZ) * 1.055];
+  const sourceY = obj.positions[position][1];
+  const clampedSourceY = Math.min(0.42, Math.max(-2.18, sourceY));
+  return [
+    point[0] * 1.052,
+    point[1] + (clampedSourceY - sourceY) * 0.1,
+    boxerCenterZ + (point[2] - boxerCenterZ) * 1.09,
+  ];
 }));
 const denseNormals = denseShapes.map((shape) => calculateNormals(shape, [skinTriangles, boxerTriangles]));
 const basePositions = denseShapes[0];
