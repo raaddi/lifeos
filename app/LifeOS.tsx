@@ -1,7 +1,14 @@
 "use client";
 
 import type { CSSProperties, FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import { bodyComposition } from "./bodyMath";
+
+const Avatar3D = dynamic(() => import("./Avatar3D"), {
+  ssr: false,
+  loading: () => <div className="avatar-loading"><span>Ładowanie modelu 3D</span><i /></div>,
+});
 
 type AppTab = "lobby" | "plan" | "progress" | "notes";
 type AreaId = "work" | "sleep" | "diet" | "sport" | "business" | "learning" | "duties" | "relations" | "finance" | "environment";
@@ -29,6 +36,7 @@ type Profile = {
   name: string;
   height: string;
   weight: string;
+  bodyFat: string;
   hair: string;
   face: string;
   mainFocus: string;
@@ -63,6 +71,7 @@ const initialProfile: Profile = {
   name: "Użytkownik",
   height: "175",
   weight: "70",
+  bodyFat: "18",
   hair: "ciemne, średniej długości",
   face: "naturalna, spokojna",
   mainFocus: "równowaga i rozwój",
@@ -105,8 +114,9 @@ export default function LifeOS() {
       if (raw) {
         const saved = JSON.parse(raw) as SavedState;
         if (saved.profile) {
-          setProfile(saved.profile);
-          setDraftProfile(saved.profile);
+          const completeProfile = { ...initialProfile, ...saved.profile };
+          setProfile(completeProfile);
+          setDraftProfile(completeProfile);
         }
         if (Array.isArray(saved.missions)) setMissions(saved.missions);
         if (Array.isArray(saved.notes)) setNotes(saved.notes);
@@ -203,6 +213,7 @@ export default function LifeOS() {
         {activeTab === "lobby" && (
           <Lobby
             profile={profile}
+            setProfile={setProfile}
             selectedArea={selectedArea}
             setSelectedArea={setSelectedArea}
             setProfileOpen={setProfileOpen}
@@ -221,7 +232,7 @@ export default function LifeOS() {
             <p>{profile.mainFocus}</p>
           </div>
           <button type="button" onClick={() => { setDraftProfile(profile); setProfileOpen(true); }}>Edytuj</button>
-          <div className="identity-stats"><span><strong>{profile.height}</strong> cm</span><span><strong>{profile.weight}</strong> kg</span><span><strong>LVL {level}</strong> start</span></div>
+          <div className="identity-stats"><span><strong>{profile.height}</strong> cm</span><span><strong>{profile.weight}</strong> kg</span><span><strong>{profile.bodyFat}%</strong> body fat</span></div>
         </section>
 
         <section className="area-intel" style={{ "--accent": currentArea.color } as CSSProperties}>
@@ -274,6 +285,7 @@ export default function LifeOS() {
                   <label><span>Wzrost (cm)</span><input type="number" min="100" max="230" value={draftProfile.height} onChange={(e) => setDraftProfile({ ...draftProfile, height: e.target.value })} /></label>
                   <label><span>Waga (kg)</span><input type="number" min="30" max="250" value={draftProfile.weight} onChange={(e) => setDraftProfile({ ...draftProfile, weight: e.target.value })} /></label>
                 </div>
+                <label><span>Poziom tkanki tłuszczowej (%)</span><input type="number" min="4" max="50" value={draftProfile.bodyFat} onChange={(e) => setDraftProfile({ ...draftProfile, bodyFat: e.target.value })} /></label>
                 <label><span>Włosy</span><input value={draftProfile.hair} onChange={(e) => setDraftProfile({ ...draftProfile, hair: e.target.value })} placeholder="kolor, długość, styl" /></label>
                 <label><span>Twarz i wygląd</span><input value={draftProfile.face} onChange={(e) => setDraftProfile({ ...draftProfile, face: e.target.value })} placeholder="krótki opis cech" /></label>
                 <label><span>Główny kierunek</span><input value={draftProfile.mainFocus} onChange={(e) => setDraftProfile({ ...draftProfile, mainFocus: e.target.value })} /></label>
@@ -288,14 +300,31 @@ export default function LifeOS() {
   );
 }
 
-function Lobby({ profile, selectedArea, setSelectedArea, setProfileOpen }: { profile: Profile; selectedArea: AreaId; setSelectedArea: (id: AreaId) => void; setProfileOpen: (open: boolean) => void }) {
+function Lobby({ profile, setProfile, selectedArea, setSelectedArea, setProfileOpen }: { profile: Profile; setProfile: (profile: Profile) => void; selectedArea: AreaId; setSelectedArea: (id: AreaId) => void; setProfileOpen: (open: boolean) => void }) {
+  const height = Number(profile.height) || 175;
+  const weight = Number(profile.weight) || 70;
+  const bodyFat = Number(profile.bodyFat) || 18;
+  const composition = bodyComposition(height, weight, bodyFat);
+
+  function updateBody(field: "height" | "weight" | "bodyFat", value: string) {
+    setProfile({ ...profile, [field]: value });
+  }
+
   return (
     <section className="lobby-stage">
       <div className="stage-heading"><span className="micro-label">Mapa życia / tryb główny</span><h1>W centrum jesteś Ty.</h1><p>Wybierz obszar, sprawdź jego stan i ustal jeden następny ruch.</p></div>
       <div className="avatar-aura aura-one" /><div className="avatar-aura aura-two" />
       <div className="avatar-plate"><span>Aktywny profil</span><strong>{profile.name}</strong><small>{profile.height} cm · {profile.weight} kg</small></div>
-      <img className="main-avatar" src="/avatar-default-v1.png" alt={`Postać użytkownika: ${profile.name}`} />
+      <Avatar3D heightCm={height} weightKg={weight} bodyFat={bodyFat} />
       <button className="customize-avatar" type="button" onClick={() => setProfileOpen(true)}><span>◎</span> Personalizuj postać</button>
+      <section className="body-controls" aria-label="Parametry ciała">
+        <div className="body-controls-title"><div><span className="micro-label">Model ciała</span><strong>Parametry na żywo</strong></div><span>3D</span></div>
+        <label><span>Wzrost <strong>{height} cm</strong></span><input type="range" min="145" max="210" step="1" value={height} onChange={(event) => updateBody("height", event.target.value)} /></label>
+        <label><span>Waga <strong>{weight} kg</strong></span><input type="range" min="40" max="160" step="1" value={weight} onChange={(event) => updateBody("weight", event.target.value)} /></label>
+        <label><span>Body fat <strong>{bodyFat}%</strong></span><input type="range" min="5" max="45" step="1" value={bodyFat} onChange={(event) => updateBody("bodyFat", event.target.value)} /></label>
+        <div className="body-output"><span><small>Masa beztłuszczowa</small><strong>{composition.leanMass.toFixed(1)} kg</strong></span><span><small>FFMI</small><strong>{composition.ffmi.toFixed(1)}</strong></span><span><small>Muskulatura</small><strong>{Math.round(composition.muscle * 100)}%</strong></span></div>
+        <p>Wizualizacja orientacyjna — nie jest pomiarem medycznym.</p>
+      </section>
       <div className="life-orbit" aria-label="Dziedziny życia">
         {areas.map((area) => (
           <button
@@ -312,7 +341,6 @@ function Lobby({ profile, selectedArea, setSelectedArea, setProfileOpen }: { pro
           </button>
         ))}
       </div>
-      <div className="stage-tip"><span>Wskazówka</span><p>Nie rozwijaj wszystkiego naraz. Wybierz obszar, który dziś ogranicza resztę.</p></div>
     </section>
   );
 }
