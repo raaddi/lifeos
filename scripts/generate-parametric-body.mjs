@@ -113,9 +113,8 @@ function minMax(values) {
 
 const obj = parseObj(path.join(sourceDir, "base.obj"));
 const bodyFaces = obj.groups.get("body") ?? [];
-const helperFaces = obj.groups.get("helper-tights") ?? [];
 const visibleBodyFaces = bodyFaces.filter((face) => !isBoxerRegion(face, obj.positions));
-const boxerFaces = helperFaces.filter((face) => isBoxerRegion(face, obj.positions));
+const boxerFaces = bodyFaces.filter((face) => isBoxerRegion(face, obj.positions));
 
 const shapeDefinitions = [
   ["MuscleUp", "muscle-max.target"],
@@ -128,40 +127,78 @@ const shapeDefinitions = [
 
 const bodyVertexIndices = new Set(bodyFaces.flatMap((face) => face.map((corner) => corner.position)));
 const targetDeltas = shapeDefinitions.map(([, file]) => parseTarget(path.join(sourceDir, file), obj.positions.length));
+const maleDeltas = parseTarget(path.join(sourceDir, "male.target"), obj.positions.length);
+const muscleBaseDeltas = targetDeltas[0];
+const BASE_MUSCLE = 0.2;
 
-function makeShape(deltas = null) {
+function relaxArms([x, y, z]) {
+  const side = Math.sign(x);
+  const distance = Math.abs(x);
+  if (!side || distance < 1.25 || y < 0.15) return [x, y, z];
+  const blend = Math.min(1, Math.max(0, (distance - 1.25) / 0.95));
+  const pivotX = side * 1.55;
+  const pivotY = 4.15;
+  const angle = side * -0.27;
+  const dx = x - pivotX;
+  const dy = y - pivotY;
+  const rotatedX = pivotX + dx * Math.cos(angle) - dy * Math.sin(angle);
+  const rotatedY = pivotY + dx * Math.sin(angle) + dy * Math.cos(angle);
+  return [x + (rotatedX - x) * blend, y + (rotatedY - y) * blend, z];
+}
+
+function makeShape(components = []) {
   const raw = obj.positions.map((position, index) => {
-    const delta = deltas?.[index] ?? [0, 0, 0];
-    return [position[0] + delta[0], position[1] + delta[1], position[2] + delta[2]];
+    const result = [...position];
+    for (const [deltas, weight] of components) {
+      const delta = deltas[index] ?? [0, 0, 0];
+      result[0] += delta[0] * weight;
+      result[1] += delta[1] * weight;
+      result[2] += delta[2] * weight;
+    }
+    return relaxArms(result);
   });
   let floor = Infinity;
   for (const index of bodyVertexIndices) floor = Math.min(floor, raw[index][1]);
   return raw.map(([x, y, z]) => [x * 0.1, (y - floor) * 0.1, z * 0.1]);
 }
 
-const rawShapes = [makeShape(), ...targetDeltas.map((target) => makeShape(target))];
+const baseComponents = [[maleDeltas, 1], [muscleBaseDeltas, BASE_MUSCLE]];
+const rawShapes = [
+  makeShape(baseComponents),
+  makeShape([[maleDeltas, 1], [targetDeltas[0], 1]]),
+  makeShape([[maleDeltas, 1], [targetDeltas[1], 1]]),
+  makeShape([...baseComponents, [targetDeltas[2], 1]]),
+  makeShape([...baseComponents, [targetDeltas[3], 1]]),
+  makeShape([...baseComponents, [targetDeltas[4], 1]]),
+  makeShape([...baseComponents, [targetDeltas[5], 1]]),
+];
 const cornerMap = new Map();
 const sourceCorners = [];
 const denseUvs = [];
 
-function denseCorner(corner) {
-  const key = `${corner.position}/${corner.uv}`;
+function denseCorner(corner, variant) {
+  const key = `${variant}:${corner.position}/${corner.uv}`;
   if (cornerMap.has(key)) return cornerMap.get(key);
   const denseIndex = sourceCorners.length;
   cornerMap.set(key, denseIndex);
-  sourceCorners.push(corner.position);
+  sourceCorners.push({ position: corner.position, variant });
   const uv = obj.uvs[corner.uv] ?? [0, 0];
   denseUvs.push([uv[0], 1 - uv[1]]);
   return denseIndex;
 }
 
-function denseTriangles(faces) {
-  return faces.flatMap((face) => triangulate(face).map((triangle) => triangle.map(denseCorner)));
+function denseTriangles(faces, variant) {
+  return faces.flatMap((face) => triangulate(face).map((triangle) => triangle.map((corner) => denseCorner(corner, variant))));
 }
 
-const skinTriangles = denseTriangles(visibleBodyFaces);
-const boxerTriangles = denseTriangles(boxerFaces);
-const denseShapes = rawShapes.map((shape) => sourceCorners.map((sourceIndex) => shape[sourceIndex]));
+const skinTriangles = denseTriangles(visibleBodyFaces, "skin");
+const boxerTriangles = denseTriangles(boxerFaces, "boxer");
+const denseShapes = rawShapes.map((shape) => sourceCorners.map(({ position, variant }) => {
+  const point = shape[position];
+  if (variant !== "boxer") return point;
+  const boxerCenterZ = 0.075;
+  return [point[0] * 1.035, point[1], boxerCenterZ + (point[2] - boxerCenterZ) * 1.055];
+}));
 const denseNormals = denseShapes.map((shape) => calculateNormals(shape, [skinTriangles, boxerTriangles]));
 const basePositions = denseShapes[0];
 const baseNormals = denseNormals[0];

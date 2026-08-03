@@ -13,7 +13,7 @@ type Avatar3DProps = {
   bodyFat: number;
 };
 
-const BODY_MODEL = "/models/parametric-body.glb";
+const BODY_MODEL = "/models/parametric-body.glb?v=2";
 
 function setMorph(mesh: Mesh, name: string, value: number) {
   const index = mesh.morphTargetDictionary?.[name];
@@ -27,7 +27,7 @@ function HumanModel({ heightCm, weightKg, bodyFat }: Avatar3DProps) {
   const composition = bodyComposition(heightCm, weightKg, bodyFat);
 
   const morphs = useMemo(() => {
-    const neutralHeight = 166.6;
+    const neutralHeight = 175;
     const neutralMuscle = 0.38;
     const neutralFat = 18;
     return {
