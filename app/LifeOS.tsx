@@ -4,7 +4,6 @@ import type { CSSProperties, FormEvent } from "react";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { bodyComposition } from "./bodyMath";
-import AvatarCreatorModal from "./AvatarCreatorModal";
 
 const Avatar3D = dynamic(() => import("./Avatar3D"), {
   ssr: false,
@@ -38,9 +37,6 @@ type Profile = {
   height: string;
   weight: string;
   bodyFat: string;
-  avatarUrl: string;
-  hair: string;
-  face: string;
   mainFocus: string;
 };
 
@@ -74,9 +70,6 @@ const initialProfile: Profile = {
   height: "175",
   weight: "70",
   bodyFat: "18",
-  avatarUrl: "/models/avatar-01.glb",
-  hair: "ciemne, średniej długości",
-  face: "naturalna, spokojna",
   mainFocus: "równowaga i rozwój",
 };
 
@@ -95,10 +88,6 @@ function uid() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function normalizeAvatarUrl(url?: string) {
-  return url === "/models/avatar-02.glb" ? url : "/models/avatar-01.glb";
-}
-
 function polishDate() {
   return new Intl.DateTimeFormat("pl-PL", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
 }
@@ -110,7 +99,6 @@ export default function LifeOS() {
   const [profile, setProfile] = useState<Profile>(initialProfile);
   const [draftProfile, setDraftProfile] = useState<Profile>(initialProfile);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [creatorOpen, setCreatorOpen] = useState(false);
   const [missionDraft, setMissionDraft] = useState("");
   const [notes, setNotes] = useState<string[]>([]);
   const [noteDraft, setNoteDraft] = useState("");
@@ -122,7 +110,7 @@ export default function LifeOS() {
       if (raw) {
         const saved = JSON.parse(raw) as SavedState;
         if (saved.profile) {
-          const completeProfile = { ...initialProfile, ...saved.profile, avatarUrl: normalizeAvatarUrl(saved.profile.avatarUrl) };
+          const completeProfile = { ...initialProfile, ...saved.profile };
           setProfile(completeProfile);
           setDraftProfile(completeProfile);
         }
@@ -145,7 +133,6 @@ export default function LifeOS() {
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setProfileOpen(false);
-        setCreatorOpen(false);
       }
     }
     window.addEventListener("keydown", closeOnEscape);
@@ -227,7 +214,7 @@ export default function LifeOS() {
             setProfile={setProfile}
             selectedArea={selectedArea}
             setSelectedArea={setSelectedArea}
-            setCreatorOpen={setCreatorOpen}
+            setProfileOpen={setProfileOpen}
           />
         )}
         {activeTab === "plan" && <PlanView missions={missions} toggleMission={toggleMission} />}
@@ -290,7 +277,7 @@ export default function LifeOS() {
             <div className="modal-header"><div><span className="micro-label">Personalizacja</span><h2 id="profile-title">Ustaw profil postaci</h2></div><button type="button" onClick={() => setProfileOpen(false)} aria-label="Zamknij">×</button></div>
             <div className="modal-body">
               <div className="avatar-preview">
-                <div className="avatar-preview-copy"><span>Model 3D</span><strong>Pełna siatka postaci</strong><p>Awatar ma twarz, włosy, ubranie, szkielet i pełną geometrię. Modele są zapisane wewnątrz aplikacji, dlatego działają również bez zewnętrznego serwera.</p><button type="button" onClick={() => { setProfileOpen(false); setCreatorOpen(true); }}>Wybierz model 3D</button></div>
+                <div className="avatar-preview-copy"><span>Parametryczny model 3D</span><strong>Anatomia reagująca na dane</strong><p>Postać jest ubrana wyłącznie w dopasowane bokserki. Wzrost, masa, body fat oraz obliczona masa mięśniowa sterują rzeczywistymi deformacjami siatki.</p></div>
               </div>
               <form className="profile-form" onSubmit={saveProfile}>
                 <label><span>Nazwa postaci</span><input value={draftProfile.name} onChange={(e) => setDraftProfile({ ...draftProfile, name: e.target.value })} /></label>
@@ -299,10 +286,8 @@ export default function LifeOS() {
                   <label><span>Waga (kg)</span><input type="number" min="30" max="250" value={draftProfile.weight} onChange={(e) => setDraftProfile({ ...draftProfile, weight: e.target.value })} /></label>
                 </div>
                 <label><span>Poziom tkanki tłuszczowej (%)</span><input type="number" min="4" max="50" value={draftProfile.bodyFat} onChange={(e) => setDraftProfile({ ...draftProfile, bodyFat: e.target.value })} /></label>
-                <label><span>Włosy</span><input value={draftProfile.hair} onChange={(e) => setDraftProfile({ ...draftProfile, hair: e.target.value })} placeholder="kolor, długość, styl" /></label>
-                <label><span>Twarz i wygląd</span><input value={draftProfile.face} onChange={(e) => setDraftProfile({ ...draftProfile, face: e.target.value })} placeholder="krótki opis cech" /></label>
                 <label><span>Główny kierunek</span><input value={draftProfile.mainFocus} onChange={(e) => setDraftProfile({ ...draftProfile, mainFocus: e.target.value })} /></label>
-                <div className="avatar-notice"><i>i</i><p>Wzrost, waga i body fat są zapisywane jako dane profilu. Nie deformujemy nimi ubranej postaci, dopóki nie wdrożymy poprawnej anatomicznie siatki z morph targetami.</p></div>
+                <div className="avatar-notice"><i>i</i><p>Zmiana danych natychmiast przebudowuje sylwetkę. To wizualizacja orientacyjna oparta na FFMI i body fat, a nie medyczny skan ciała.</p></div>
                 <button className="save-profile" type="submit">Zapisz profil postaci</button>
               </form>
             </div>
@@ -310,21 +295,11 @@ export default function LifeOS() {
         </div>
       )}
 
-      {creatorOpen && (
-        <AvatarCreatorModal
-          onClose={() => setCreatorOpen(false)}
-          onAvatar={(avatarUrl) => {
-            setProfile((current) => ({ ...current, avatarUrl }));
-            setDraftProfile((current) => ({ ...current, avatarUrl }));
-            setCreatorOpen(false);
-          }}
-        />
-      )}
     </div>
   );
 }
 
-function Lobby({ profile, setProfile, selectedArea, setSelectedArea, setCreatorOpen }: { profile: Profile; setProfile: (profile: Profile) => void; selectedArea: AreaId; setSelectedArea: (id: AreaId) => void; setCreatorOpen: (open: boolean) => void }) {
+function Lobby({ profile, setProfile, selectedArea, setSelectedArea, setProfileOpen }: { profile: Profile; setProfile: (profile: Profile) => void; selectedArea: AreaId; setSelectedArea: (id: AreaId) => void; setProfileOpen: (open: boolean) => void }) {
   const height = Number(profile.height) || 175;
   const weight = Number(profile.weight) || 70;
   const bodyFat = Number(profile.bodyFat) || 18;
@@ -339,15 +314,15 @@ function Lobby({ profile, setProfile, selectedArea, setSelectedArea, setCreatorO
       <div className="stage-heading"><span className="micro-label">Mapa życia / tryb główny</span><h1>W centrum jesteś Ty.</h1><p>Wybierz obszar, sprawdź jego stan i ustal jeden następny ruch.</p></div>
       <div className="avatar-aura aura-one" /><div className="avatar-aura aura-two" />
       <div className="avatar-plate"><span>Aktywny profil</span><strong>{profile.name}</strong><small>{profile.height} cm · {profile.weight} kg</small></div>
-      <Avatar3D modelUrl={profile.avatarUrl} />
-      <button className="customize-avatar" type="button" onClick={() => setCreatorOpen(true)}><span>◎</span> Wybierz model 3D</button>
+      <Avatar3D heightCm={height} weightKg={weight} bodyFat={bodyFat} />
+      <button className="customize-avatar" type="button" onClick={() => setProfileOpen(true)}><span>◎</span> Edytuj dane ciała</button>
       <section className="body-controls" aria-label="Parametry ciała">
-        <div className="body-controls-title"><div><span className="micro-label">Dane sylwetki</span><strong>Profil i obliczenia</strong></div><span>PROFIL</span></div>
+        <div className="body-controls-title"><div><span className="micro-label">Model ciała</span><strong>Deformacja na żywo</strong></div><span>MORPH 3D</span></div>
         <label><span>Wzrost <strong>{height} cm</strong></span><input type="range" min="145" max="210" step="1" value={height} onChange={(event) => updateBody("height", event.target.value)} /></label>
         <label><span>Waga <strong>{weight} kg</strong></span><input type="range" min="40" max="160" step="1" value={weight} onChange={(event) => updateBody("weight", event.target.value)} /></label>
         <label><span>Body fat <strong>{bodyFat}%</strong></span><input type="range" min="5" max="45" step="1" value={bodyFat} onChange={(event) => updateBody("bodyFat", event.target.value)} /></label>
         <div className="body-output"><span><small>Masa beztłuszczowa</small><strong>{composition.leanMass.toFixed(1)} kg</strong></span><span><small>FFMI</small><strong>{composition.ffmi.toFixed(1)}</strong></span><span><small>Muskulatura</small><strong>{Math.round(composition.muscle * 100)}%</strong></span></div>
-        <p>Parametry nie zniekształcają awatara. Anatomiczna zmiana muskulatury i tkanki tłuszczowej wymaga osobnej siatki parametrycznej z morph targetami.</p>
+        <p>Waga i body fat wyznaczają masę beztłuszczową oraz FFMI, a model płynnie zmienia wzrost, umięśnienie i ilość tkanki tłuszczowej.</p>
       </section>
       <div className="life-orbit" aria-label="Dziedziny życia">
         {areas.map((area) => (
