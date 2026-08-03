@@ -45,6 +45,68 @@ function parseTarget(file, vertexCount) {
   return deltas;
 }
 
+function parseClothingProxy(file) {
+  const refs = [];
+  const scaleData = [null, null, null];
+  const deleteVertices = new Set();
+  let section = "header";
+  let previousDeleteVertex = null;
+  let continueRange = false;
+
+  for (const rawLine of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const words = line.split(/\s+/);
+
+    if (words[0] === "x_scale" || words[0] === "y_scale" || words[0] === "z_scale") {
+      const axis = { x_scale: 0, y_scale: 1, z_scale: 2 }[words[0]];
+      scaleData[axis] = [Number(words[1]), Number(words[2]), Number(words[3])];
+      continue;
+    }
+    if (words[0] === "verts") {
+      section = "verts";
+      continue;
+    }
+    if (words[0] === "delete_verts") {
+      section = "delete";
+      continue;
+    }
+
+    if (section === "verts") {
+      if (words.length === 1) {
+        refs.push({ vertices: [Number(words[0]), 0, 1], weights: [1, 0, 0], offset: [0, 0, 0] });
+      } else if (words.length >= 6) {
+        refs.push({
+          vertices: words.slice(0, 3).map(Number),
+          weights: words.slice(3, 6).map(Number),
+          offset: words.length >= 9 ? words.slice(6, 9).map(Number) : [0, 0, 0],
+        });
+      }
+      continue;
+    }
+
+    if (section === "delete") {
+      for (const word of words) {
+        if (word === "-") {
+          continueRange = true;
+          continue;
+        }
+        const value = Number(word);
+        if (continueRange && previousDeleteVertex !== null) {
+          for (let index = previousDeleteVertex; index <= value; index += 1) deleteVertices.add(index);
+          continueRange = false;
+        } else {
+          deleteVertices.add(value);
+        }
+        previousDeleteVertex = value;
+      }
+    }
+  }
+
+  if (scaleData.some((entry) => !entry)) throw new Error("Clothing proxy is missing scale data.");
+  return { refs, scaleData, deleteVertices };
+}
+
 function triangulate(face) {
   const triangles = [];
   for (let index = 1; index < face.length - 1; index += 1) {
@@ -96,7 +158,11 @@ function minMax(values) {
 }
 
 const obj = parseObj(path.join(sourceDir, "base.obj"));
+const clothingObj = parseObj(path.join(sourceDir, "shorts.obj"));
+const clothingProxy = parseClothingProxy(path.join(sourceDir, "shorts.mhclo"));
 const bodyFaces = obj.groups.get("body") ?? [];
+const visibleBodyFaces = bodyFaces.filter((face) => face.every((corner) => !clothingProxy.deleteVertices.has(corner.position)));
+const clothingFaces = [...clothingObj.groups.values()].flat();
 
 const shapeDefinitions = [
   ["MuscleUp", "muscle-max.target"],
@@ -141,8 +207,8 @@ function relaxArms(point) {
   ];
 }
 
-function makeShape(components = []) {
-  const raw = obj.positions.map((position, index) => {
+function makeRawShape(components = []) {
+  return obj.positions.map((position, index) => {
     const result = [...position];
     for (const [deltas, weight] of components) {
       const delta = deltas[index] ?? [0, 0, 0];
@@ -152,49 +218,85 @@ function makeShape(components = []) {
     }
     return relaxArms(result);
   });
+}
+
+function floorForShape(raw) {
   let floor = Infinity;
   for (const index of bodyVertexIndices) floor = Math.min(floor, raw[index][1]);
+  return floor;
+}
+
+function normalizeShape(raw, floor) {
   return raw.map(([x, y, z]) => [x * 0.1, (y - floor) * 0.1, z * 0.1]);
 }
 
+function fitClothing(rawBody, floor) {
+  const scales = clothingProxy.scaleData.map(([first, second, denominator], axis) => (
+    Math.abs(rawBody[first][axis] - rawBody[second][axis]) / denominator
+  ));
+
+  return clothingProxy.refs.map(({ vertices, weights, offset }) => {
+    const point = [0, 0, 0];
+    for (let refIndex = 0; refIndex < 3; refIndex += 1) {
+      const bodyPoint = rawBody[vertices[refIndex]];
+      for (let axis = 0; axis < 3; axis += 1) point[axis] += bodyPoint[axis] * weights[refIndex];
+    }
+    for (let axis = 0; axis < 3; axis += 1) point[axis] += offset[axis] * scales[axis];
+    return [point[0] * 0.1, (point[1] - floor) * 0.1, point[2] * 0.1];
+  });
+}
+
 const baseComponents = [[maleDeltas, 1], [muscleBaseDeltas, BASE_MUSCLE]];
-const rawShapes = [
-  makeShape(baseComponents),
-  makeShape([[maleDeltas, 1], [targetDeltas[0], 1]]),
-  makeShape([[maleDeltas, 1], [targetDeltas[1], 1]]),
-  makeShape([...baseComponents, [targetDeltas[2], 1]]),
-  makeShape([...baseComponents, [targetDeltas[3], 1]]),
-  makeShape([...baseComponents, [targetDeltas[4], 1]]),
-  makeShape([...baseComponents, [targetDeltas[5], 1]]),
+const bodyShapesRaw = [
+  makeRawShape(baseComponents),
+  makeRawShape([[maleDeltas, 1], [targetDeltas[0], 1]]),
+  makeRawShape([[maleDeltas, 1], [targetDeltas[1], 1]]),
+  makeRawShape([...baseComponents, [targetDeltas[2], 1]]),
+  makeRawShape([...baseComponents, [targetDeltas[3], 1]]),
+  makeRawShape([...baseComponents, [targetDeltas[4], 1]]),
+  makeRawShape([...baseComponents, [targetDeltas[5], 1]]),
 ];
-const cornerMap = new Map();
-const sourceCorners = [];
-const denseUvs = [];
+const shapeFloors = bodyShapesRaw.map(floorForShape);
+const bodyShapes = bodyShapesRaw.map((shape, index) => normalizeShape(shape, shapeFloors[index]));
+const clothingShapes = bodyShapesRaw.map((shape, index) => fitClothing(shape, shapeFloors[index]));
 
-function denseCorner(corner, variant) {
-  const key = `${variant}:${corner.position}/${corner.uv}`;
-  if (cornerMap.has(key)) return cornerMap.get(key);
-  const denseIndex = sourceCorners.length;
-  cornerMap.set(key, denseIndex);
-  sourceCorners.push({ position: corner.position, variant });
-  const uv = obj.uvs[corner.uv] ?? [0, 0];
-  denseUvs.push([uv[0], 1 - uv[1]]);
-  return denseIndex;
+if (clothingProxy.refs.length !== clothingObj.positions.length) {
+  throw new Error(`Clothing mapping has ${clothingProxy.refs.length} vertices, OBJ has ${clothingObj.positions.length}.`);
 }
 
-function denseTriangles(faces, variant) {
-  return faces.flatMap((face) => triangulate(face).map((triangle) => triangle.map((corner) => denseCorner(corner, variant))));
+function densify(geometry, faces, shapes) {
+  const cornerMap = new Map();
+  const sourceCorners = [];
+  const uvs = [];
+  const triangles = faces.flatMap((face) => triangulate(face).map((triangle) => triangle.map((corner) => {
+    const key = `${corner.position}/${corner.uv}`;
+    if (cornerMap.has(key)) return cornerMap.get(key);
+    const denseIndex = sourceCorners.length;
+    cornerMap.set(key, denseIndex);
+    sourceCorners.push(corner.position);
+    const uv = geometry.uvs[corner.uv] ?? [0, 0];
+    uvs.push([uv[0], 1 - uv[1]]);
+    return denseIndex;
+  })));
+  const denseShapes = shapes.map((shape) => sourceCorners.map((position) => shape[position]));
+  const normals = denseShapes.map((shape) => calculateNormals(shape, [triangles]));
+  const positions = denseShapes[0];
+  return {
+    positions,
+    normals: normals[0],
+    uvs,
+    triangles,
+    morphPositions: denseShapes.slice(1).map((shape) => shape.map((point, index) => point.map((value, axis) => value - positions[index][axis]))),
+    morphNormals: normals.slice(1).map((shape) => shape.map((normal, index) => normal.map((value, axis) => value - normals[0][index][axis]))),
+  };
 }
 
-const skinTriangles = denseTriangles(bodyFaces, "skin");
-const denseShapes = rawShapes.map((shape) => sourceCorners.map(({ position }) => shape[position]));
-const denseNormals = denseShapes.map((shape) => calculateNormals(shape, [skinTriangles]));
-const basePositions = denseShapes[0];
-const baseNormals = denseNormals[0];
-const morphPositionDeltas = denseShapes.slice(1).map((shape) => shape.map((point, index) => point.map((value, axis) => value - basePositions[index][axis])));
-const morphNormalDeltas = denseNormals.slice(1).map((shape) => shape.map((normal, index) => normal.map((value, axis) => value - baseNormals[index][axis])));
+const bodyMesh = densify(obj, visibleBodyFaces, bodyShapes);
+const clothingMesh = densify(clothingObj, clothingFaces, clothingShapes);
 
-if (basePositions.length >= 65535) throw new Error(`Model has ${basePositions.length} vertices; use 32-bit indices.`);
+if (bodyMesh.positions.length >= 65535 || clothingMesh.positions.length >= 65535) {
+  throw new Error("Model contains a mesh with too many vertices for 16-bit indices.");
+}
 
 const chunks = [];
 let byteOffset = 0;
@@ -238,21 +340,33 @@ function indexAccessor(triangles) {
   return accessors.length - 1;
 }
 
-const positionAccessor = floatAccessor(basePositions, "VEC3");
-const normalAccessor = floatAccessor(baseNormals, "VEC3");
-const uvAccessor = floatAccessor(denseUvs, "VEC2");
-const morphAccessors = morphPositionDeltas.map((positions, index) => ({
-  POSITION: floatAccessor(positions, "VEC3"),
-  NORMAL: floatAccessor(morphNormalDeltas[index], "VEC3"),
-}));
-const skinIndexAccessor = indexAccessor(skinTriangles);
+function meshAccessors(mesh) {
+  return {
+    attributes: {
+      POSITION: floatAccessor(mesh.positions, "VEC3"),
+      NORMAL: floatAccessor(mesh.normals, "VEC3"),
+      TEXCOORD_0: floatAccessor(mesh.uvs, "VEC2"),
+    },
+    targets: mesh.morphPositions.map((positions, index) => ({
+      POSITION: floatAccessor(positions, "VEC3"),
+      NORMAL: floatAccessor(mesh.morphNormals[index], "VEC3"),
+    })),
+    indices: indexAccessor(mesh.triangles),
+  };
+}
+
+const bodyAccessors = meshAccessors(bodyMesh);
+const clothingAccessors = meshAccessors(clothingMesh);
 
 const skinPng = fs.readFileSync(path.join(sourceDir, "skin.png"));
 const imageBufferView = addBuffer(skinPng);
 
-const attributes = { POSITION: positionAccessor, NORMAL: normalAccessor, TEXCOORD_0: uvAccessor };
 const gltf = {
-  asset: { version: "2.0", generator: "LifeOS parametric body generator / MakeHuman CC0 assets" },
+  asset: {
+    version: "2.0",
+    generator: "LifeOS parametric body generator / MakeHuman assets",
+    copyright: "Body: MakeHuman Community, CC0. Swimming trunks: Mindfront, CC BY 4.0.",
+  },
   scene: 0,
   scenes: [{ nodes: [0] }],
   nodes: [{ name: "ParametricBody", mesh: 0 }],
@@ -260,9 +374,15 @@ const gltf = {
     name: "HumanBody",
     weights: shapeDefinitions.map(() => 0),
     extras: { targetNames: shapeDefinitions.map(([name]) => name) },
-    primitives: [{ attributes, indices: skinIndexAccessor, material: 0, targets: morphAccessors }],
+    primitives: [
+      { ...bodyAccessors, material: 0 },
+      { ...clothingAccessors, material: 1 },
+    ],
   }],
-  materials: [{ name: "Skin", pbrMetallicRoughness: { baseColorTexture: { index: 0 }, metallicFactor: 0, roughnessFactor: 0.72 }, doubleSided: false }],
+  materials: [
+    { name: "Skin", pbrMetallicRoughness: { baseColorTexture: { index: 0 }, metallicFactor: 0, roughnessFactor: 0.72 }, doubleSided: false },
+    { name: "FittedBoxerBriefs", pbrMetallicRoughness: { baseColorFactor: [0.025, 0.032, 0.038, 1], metallicFactor: 0, roughnessFactor: 0.88 }, doubleSided: true },
+  ],
   textures: [{ sampler: 0, source: 0 }],
   samplers: [{ magFilter: 9729, minFilter: 9987, wrapS: 10497, wrapT: 10497 }],
   images: [{ name: "MakeHumanSkin", bufferView: imageBufferView, mimeType: "image/png" }],
@@ -290,4 +410,11 @@ binHeader.writeUInt32LE(0x004e4942, 4);
 
 fs.mkdirSync(path.dirname(outputFile), { recursive: true });
 fs.writeFileSync(outputFile, Buffer.concat([header, jsonHeader, paddedJson, binHeader, paddedBin]));
-console.log(JSON.stringify({ outputFile, vertices: basePositions.length, skinTriangles: skinTriangles.length, bytes: fs.statSync(outputFile).size }));
+console.log(JSON.stringify({
+  outputFile,
+  bodyVertices: bodyMesh.positions.length,
+  bodyTriangles: bodyMesh.triangles.length,
+  clothingVertices: clothingMesh.positions.length,
+  clothingTriangles: clothingMesh.triangles.length,
+  bytes: fs.statSync(outputFile).size,
+}));

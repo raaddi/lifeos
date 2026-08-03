@@ -4,7 +4,6 @@ import { Suspense, useEffect, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows, OrbitControls, useGLTF } from "@react-three/drei";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
-import { DoubleSide } from "three";
 import type { Mesh, Object3D } from "three";
 import { bodyComposition, clampBodyValue } from "./bodyMath";
 
@@ -14,59 +13,12 @@ type Avatar3DProps = {
   bodyFat: number;
 };
 
-const BODY_MODEL = "/models/parametric-body.glb?v=4";
+const BODY_MODEL = "/models/parametric-body.glb?v=5";
 
 function setMorph(mesh: Mesh, name: string, value: number) {
   const index = mesh.morphTargetDictionary?.[name];
   if (index === undefined || !mesh.morphTargetInfluences) return;
   mesh.morphTargetInfluences[index] = clampBodyValue(value, 0, 1);
-}
-
-type ClothingShape = {
-  heightScale: number;
-  width: number;
-  depth: number;
-};
-
-function Fabric() {
-  return <meshStandardMaterial color="#111517" roughness={0.88} side={DoubleSide} />;
-}
-
-function BoxerBriefs({ heightScale, width, depth }: ClothingShape) {
-  return (
-    <group>
-      <mesh position={[0, 0.79 * heightScale, 0.055]} scale={[0.185 * width, 0.1 * heightScale, 0.14 * depth]} castShadow>
-        <cylinderGeometry args={[0.92, 1, 2, 48, 3, true]} />
-        <Fabric />
-      </mesh>
-      {[-1, 1].map((side) => (
-        <mesh
-          key={`leg-${side}`}
-          position={[side * 0.095 * width, 0.655 * heightScale, 0.055]}
-          scale={[0.1 * width, 0.06 * heightScale, 0.13 * depth]}
-          castShadow
-        >
-          <cylinderGeometry args={[1, 0.9, 2, 36, 2, true]} />
-          <Fabric />
-        </mesh>
-      ))}
-      <mesh position={[0, 0.887 * heightScale, 0.055]} scale={[0.177 * width, 0.012 * heightScale, 0.137 * depth]} castShadow>
-        <cylinderGeometry args={[1, 1, 2, 48, 1, true]} />
-        <meshStandardMaterial color="#252b2e" roughness={0.78} side={DoubleSide} />
-      </mesh>
-      {[-1, 1].map((side) => (
-        <mesh
-          key={`hem-${side}`}
-          position={[side * 0.095 * width, 0.598 * heightScale, 0.055]}
-          scale={[0.091 * width, 0.008 * heightScale, 0.119 * depth]}
-          castShadow
-        >
-          <cylinderGeometry args={[1, 1, 2, 36, 1, true]} />
-          <meshStandardMaterial color="#252b2e" roughness={0.78} side={DoubleSide} />
-        </mesh>
-      ))}
-    </group>
-  );
 }
 
 function HumanModel({ heightCm, weightKg, bodyFat }: Avatar3DProps) {
@@ -88,15 +40,6 @@ function HumanModel({ heightCm, weightKg, bodyFat }: Avatar3DProps) {
     };
   }, [bodyFat, composition.muscle, heightCm]);
 
-  const clothing = useMemo(() => {
-    const heightScale = clampBodyValue(heightCm / 175, 0.83, 1.2);
-    return {
-      heightScale,
-      width: 1 + composition.fat * 0.18 + composition.mass * 0.07 + composition.muscle * 0.03,
-      depth: 1 + composition.fat * 0.25 + composition.mass * 0.06,
-    };
-  }, [composition.fat, composition.mass, composition.muscle, heightCm]);
-
   useEffect(() => {
     avatar.traverse((object: Object3D) => {
       const mesh = object as Mesh;
@@ -107,12 +50,7 @@ function HumanModel({ heightCm, weightKg, bodyFat }: Avatar3DProps) {
     });
   }, [avatar, morphs]);
 
-  return (
-    <group>
-      <primitive object={avatar} />
-      <BoxerBriefs {...clothing} />
-    </group>
-  );
+  return <primitive object={avatar} />;
 }
 
 export default function Avatar3D(props: Avatar3DProps) {
