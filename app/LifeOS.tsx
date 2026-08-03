@@ -4,6 +4,7 @@ import type { CSSProperties, FormEvent } from "react";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { bodyComposition } from "./bodyMath";
+import AvatarCreatorModal from "./AvatarCreatorModal";
 
 const Avatar3D = dynamic(() => import("./Avatar3D"), {
   ssr: false,
@@ -37,6 +38,7 @@ type Profile = {
   height: string;
   weight: string;
   bodyFat: string;
+  avatarUrl: string;
   hair: string;
   face: string;
   mainFocus: string;
@@ -72,6 +74,7 @@ const initialProfile: Profile = {
   height: "175",
   weight: "70",
   bodyFat: "18",
+  avatarUrl: "https://models.readyplayer.me/6185a4acfb622cf1cdc49348.glb?pose=A&quality=high",
   hair: "ciemne, średniej długości",
   face: "naturalna, spokojna",
   mainFocus: "równowaga i rozwój",
@@ -103,6 +106,7 @@ export default function LifeOS() {
   const [profile, setProfile] = useState<Profile>(initialProfile);
   const [draftProfile, setDraftProfile] = useState<Profile>(initialProfile);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [creatorOpen, setCreatorOpen] = useState(false);
   const [missionDraft, setMissionDraft] = useState("");
   const [notes, setNotes] = useState<string[]>([]);
   const [noteDraft, setNoteDraft] = useState("");
@@ -135,7 +139,10 @@ export default function LifeOS() {
 
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") setProfileOpen(false);
+      if (event.key === "Escape") {
+        setProfileOpen(false);
+        setCreatorOpen(false);
+      }
     }
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
@@ -216,7 +223,7 @@ export default function LifeOS() {
             setProfile={setProfile}
             selectedArea={selectedArea}
             setSelectedArea={setSelectedArea}
-            setProfileOpen={setProfileOpen}
+            setCreatorOpen={setCreatorOpen}
           />
         )}
         {activeTab === "plan" && <PlanView missions={missions} toggleMission={toggleMission} />}
@@ -278,7 +285,9 @@ export default function LifeOS() {
           <section className="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-title">
             <div className="modal-header"><div><span className="micro-label">Personalizacja</span><h2 id="profile-title">Zbuduj swoją postać</h2></div><button type="button" onClick={() => setProfileOpen(false)} aria-label="Zamknij">×</button></div>
             <div className="modal-body">
-              <div className="avatar-preview"><img src="/avatar-default-v1.png" alt="Domyślna postać użytkownika" /><span>Domyślny awatar</span></div>
+              <div className="avatar-preview">
+                <div className="avatar-preview-copy"><span>Model 3D</span><strong>Prawdziwa siatka człowieka</strong><p>Awatar ma twarz, włosy, ubranie, szkielet i pełną geometrię. Możesz utworzyć własny wygląd ze zdjęcia lub presetu.</p><button type="button" onClick={() => { setProfileOpen(false); setCreatorOpen(true); }}>Otwórz kreator wyglądu</button></div>
+              </div>
               <form className="profile-form" onSubmit={saveProfile}>
                 <label><span>Nazwa postaci</span><input value={draftProfile.name} onChange={(e) => setDraftProfile({ ...draftProfile, name: e.target.value })} /></label>
                 <div className="double-field">
@@ -289,18 +298,29 @@ export default function LifeOS() {
                 <label><span>Włosy</span><input value={draftProfile.hair} onChange={(e) => setDraftProfile({ ...draftProfile, hair: e.target.value })} placeholder="kolor, długość, styl" /></label>
                 <label><span>Twarz i wygląd</span><input value={draftProfile.face} onChange={(e) => setDraftProfile({ ...draftProfile, face: e.target.value })} placeholder="krótki opis cech" /></label>
                 <label><span>Główny kierunek</span><input value={draftProfile.mainFocus} onChange={(e) => setDraftProfile({ ...draftProfile, mainFocus: e.target.value })} /></label>
-                <div className="avatar-notice"><i>i</i><p>To neutralna postać startowa. Później będzie można wygenerować własny wygląd na podstawie opisu albo zdjęcia.</p></div>
+                <div className="avatar-notice"><i>i</i><p>Wzrost, waga i body fat są zapisywane jako dane profilu. Nie deformujemy nimi ubranej postaci, dopóki nie wdrożymy poprawnej anatomicznie siatki z morph targetami.</p></div>
                 <button className="save-profile" type="submit">Zapisz profil postaci</button>
               </form>
             </div>
           </section>
         </div>
       )}
+
+      {creatorOpen && (
+        <AvatarCreatorModal
+          onClose={() => setCreatorOpen(false)}
+          onAvatar={(avatarUrl) => {
+            setProfile((current) => ({ ...current, avatarUrl }));
+            setDraftProfile((current) => ({ ...current, avatarUrl }));
+            setCreatorOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function Lobby({ profile, setProfile, selectedArea, setSelectedArea, setProfileOpen }: { profile: Profile; setProfile: (profile: Profile) => void; selectedArea: AreaId; setSelectedArea: (id: AreaId) => void; setProfileOpen: (open: boolean) => void }) {
+function Lobby({ profile, setProfile, selectedArea, setSelectedArea, setCreatorOpen }: { profile: Profile; setProfile: (profile: Profile) => void; selectedArea: AreaId; setSelectedArea: (id: AreaId) => void; setCreatorOpen: (open: boolean) => void }) {
   const height = Number(profile.height) || 175;
   const weight = Number(profile.weight) || 70;
   const bodyFat = Number(profile.bodyFat) || 18;
@@ -315,15 +335,15 @@ function Lobby({ profile, setProfile, selectedArea, setSelectedArea, setProfileO
       <div className="stage-heading"><span className="micro-label">Mapa życia / tryb główny</span><h1>W centrum jesteś Ty.</h1><p>Wybierz obszar, sprawdź jego stan i ustal jeden następny ruch.</p></div>
       <div className="avatar-aura aura-one" /><div className="avatar-aura aura-two" />
       <div className="avatar-plate"><span>Aktywny profil</span><strong>{profile.name}</strong><small>{profile.height} cm · {profile.weight} kg</small></div>
-      <Avatar3D heightCm={height} weightKg={weight} bodyFat={bodyFat} />
-      <button className="customize-avatar" type="button" onClick={() => setProfileOpen(true)}><span>◎</span> Personalizuj postać</button>
+      <Avatar3D modelUrl={profile.avatarUrl} />
+      <button className="customize-avatar" type="button" onClick={() => setCreatorOpen(true)}><span>◎</span> Stwórz własny wygląd</button>
       <section className="body-controls" aria-label="Parametry ciała">
-        <div className="body-controls-title"><div><span className="micro-label">Model ciała</span><strong>Parametry na żywo</strong></div><span>3D</span></div>
+        <div className="body-controls-title"><div><span className="micro-label">Dane sylwetki</span><strong>Profil i obliczenia</strong></div><span>PROFIL</span></div>
         <label><span>Wzrost <strong>{height} cm</strong></span><input type="range" min="145" max="210" step="1" value={height} onChange={(event) => updateBody("height", event.target.value)} /></label>
         <label><span>Waga <strong>{weight} kg</strong></span><input type="range" min="40" max="160" step="1" value={weight} onChange={(event) => updateBody("weight", event.target.value)} /></label>
         <label><span>Body fat <strong>{bodyFat}%</strong></span><input type="range" min="5" max="45" step="1" value={bodyFat} onChange={(event) => updateBody("bodyFat", event.target.value)} /></label>
         <div className="body-output"><span><small>Masa beztłuszczowa</small><strong>{composition.leanMass.toFixed(1)} kg</strong></span><span><small>FFMI</small><strong>{composition.ffmi.toFixed(1)}</strong></span><span><small>Muskulatura</small><strong>{Math.round(composition.muscle * 100)}%</strong></span></div>
-        <p>Wizualizacja orientacyjna — nie jest pomiarem medycznym.</p>
+        <p>Parametry nie zniekształcają awatara. Anatomiczna zmiana muskulatury i tkanki tłuszczowej wymaga osobnej siatki parametrycznej z morph targetami.</p>
       </section>
       <div className="life-orbit" aria-label="Dziedziny życia">
         {areas.map((area) => (
