@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows, OrbitControls, useGLTF } from "@react-three/drei";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
+import { DoubleSide } from "three";
 import type { Mesh, Object3D } from "three";
 import { bodyComposition, clampBodyValue } from "./bodyMath";
 
@@ -13,12 +14,59 @@ type Avatar3DProps = {
   bodyFat: number;
 };
 
-const BODY_MODEL = "/models/parametric-body.glb?v=3";
+const BODY_MODEL = "/models/parametric-body.glb?v=4";
 
 function setMorph(mesh: Mesh, name: string, value: number) {
   const index = mesh.morphTargetDictionary?.[name];
   if (index === undefined || !mesh.morphTargetInfluences) return;
   mesh.morphTargetInfluences[index] = clampBodyValue(value, 0, 1);
+}
+
+type ClothingShape = {
+  heightScale: number;
+  width: number;
+  depth: number;
+};
+
+function Fabric() {
+  return <meshStandardMaterial color="#111517" roughness={0.88} side={DoubleSide} />;
+}
+
+function BoxerBriefs({ heightScale, width, depth }: ClothingShape) {
+  return (
+    <group>
+      <mesh position={[0, 0.79 * heightScale, 0.055]} scale={[0.185 * width, 0.1 * heightScale, 0.14 * depth]} castShadow>
+        <cylinderGeometry args={[0.92, 1, 2, 48, 3, true]} />
+        <Fabric />
+      </mesh>
+      {[-1, 1].map((side) => (
+        <mesh
+          key={`leg-${side}`}
+          position={[side * 0.095 * width, 0.655 * heightScale, 0.055]}
+          scale={[0.1 * width, 0.06 * heightScale, 0.13 * depth]}
+          castShadow
+        >
+          <cylinderGeometry args={[1, 0.9, 2, 36, 2, true]} />
+          <Fabric />
+        </mesh>
+      ))}
+      <mesh position={[0, 0.887 * heightScale, 0.055]} scale={[0.177 * width, 0.012 * heightScale, 0.137 * depth]} castShadow>
+        <cylinderGeometry args={[1, 1, 2, 48, 1, true]} />
+        <meshStandardMaterial color="#252b2e" roughness={0.78} side={DoubleSide} />
+      </mesh>
+      {[-1, 1].map((side) => (
+        <mesh
+          key={`hem-${side}`}
+          position={[side * 0.095 * width, 0.598 * heightScale, 0.055]}
+          scale={[0.091 * width, 0.008 * heightScale, 0.119 * depth]}
+          castShadow
+        >
+          <cylinderGeometry args={[1, 1, 2, 36, 1, true]} />
+          <meshStandardMaterial color="#252b2e" roughness={0.78} side={DoubleSide} />
+        </mesh>
+      ))}
+    </group>
+  );
 }
 
 function HumanModel({ heightCm, weightKg, bodyFat }: Avatar3DProps) {
@@ -44,8 +92,8 @@ function HumanModel({ heightCm, weightKg, bodyFat }: Avatar3DProps) {
     const heightScale = clampBodyValue(heightCm / 175, 0.83, 1.2);
     return {
       heightScale,
-      width: 1 + composition.fat * 0.24 + composition.mass * 0.1 + composition.muscle * 0.05,
-      depth: 1 + composition.fat * 0.32 + composition.mass * 0.08,
+      width: 1 + composition.fat * 0.18 + composition.mass * 0.07 + composition.muscle * 0.03,
+      depth: 1 + composition.fat * 0.25 + composition.mass * 0.06,
     };
   }, [composition.fat, composition.mass, composition.muscle, heightCm]);
 
@@ -62,27 +110,7 @@ function HumanModel({ heightCm, weightKg, bodyFat }: Avatar3DProps) {
   return (
     <group>
       <primitive object={avatar} />
-      <mesh
-        position={[0, 0.887 * clothing.heightScale, 0.075]}
-        rotation={[Math.PI / 2, 0, 0]}
-        scale={[0.185 * clothing.width, 0.132 * clothing.depth, 0.18]}
-        castShadow
-      >
-        <torusGeometry args={[1, 0.065, 8, 48]} />
-        <meshStandardMaterial color="#171b1d" roughness={0.72} />
-      </mesh>
-      {[-1, 1].map((side) => (
-        <mesh
-          key={side}
-          position={[side * 0.092 * clothing.width, 0.627 * clothing.heightScale, 0.07]}
-          rotation={[Math.PI / 2, 0, 0]}
-          scale={[0.092 * clothing.width, 0.105 * clothing.depth, 0.13]}
-          castShadow
-        >
-          <torusGeometry args={[1, 0.06, 8, 36]} />
-          <meshStandardMaterial color="#171b1d" roughness={0.72} />
-        </mesh>
-      ))}
+      <BoxerBriefs {...clothing} />
     </group>
   );
 }

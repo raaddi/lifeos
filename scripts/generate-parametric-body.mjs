@@ -45,22 +45,6 @@ function parseTarget(file, vertexCount) {
   return deltas;
 }
 
-function faceCenter(face, positions) {
-  const result = [0, 0, 0];
-  for (const corner of face) {
-    const point = positions[corner.position];
-    result[0] += point[0] / face.length;
-    result[1] += point[1] / face.length;
-    result[2] += point[2] / face.length;
-  }
-  return result;
-}
-
-function isBoxerRegion(face, positions) {
-  const [x, y] = faceCenter(face, positions);
-  return y > -2.25 && y < 0.48 && Math.abs(x) < 1.82;
-}
-
 function triangulate(face) {
   const triangles = [];
   for (let index = 1; index < face.length - 1; index += 1) {
@@ -113,8 +97,6 @@ function minMax(values) {
 
 const obj = parseObj(path.join(sourceDir, "base.obj"));
 const bodyFaces = obj.groups.get("body") ?? [];
-const visibleBodyFaces = bodyFaces;
-const boxerFaces = bodyFaces.filter((face) => isBoxerRegion(face, obj.positions));
 
 const shapeDefinitions = [
   ["MuscleUp", "muscle-max.target"],
@@ -204,21 +186,9 @@ function denseTriangles(faces, variant) {
   return faces.flatMap((face) => triangulate(face).map((triangle) => triangle.map((corner) => denseCorner(corner, variant))));
 }
 
-const skinTriangles = denseTriangles(visibleBodyFaces, "skin");
-const boxerTriangles = denseTriangles(boxerFaces, "boxer");
-const denseShapes = rawShapes.map((shape) => sourceCorners.map(({ position, variant }) => {
-  const point = shape[position];
-  if (variant !== "boxer") return point;
-  const boxerCenterZ = 0.075;
-  const sourceY = obj.positions[position][1];
-  const clampedSourceY = Math.min(0.42, Math.max(-2.18, sourceY));
-  return [
-    point[0] * 1.052,
-    point[1] + (clampedSourceY - sourceY) * 0.1,
-    boxerCenterZ + (point[2] - boxerCenterZ) * 1.09,
-  ];
-}));
-const denseNormals = denseShapes.map((shape) => calculateNormals(shape, [skinTriangles, boxerTriangles]));
+const skinTriangles = denseTriangles(bodyFaces, "skin");
+const denseShapes = rawShapes.map((shape) => sourceCorners.map(({ position }) => shape[position]));
+const denseNormals = denseShapes.map((shape) => calculateNormals(shape, [skinTriangles]));
 const basePositions = denseShapes[0];
 const baseNormals = denseNormals[0];
 const morphPositionDeltas = denseShapes.slice(1).map((shape) => shape.map((point, index) => point.map((value, axis) => value - basePositions[index][axis])));
@@ -276,7 +246,6 @@ const morphAccessors = morphPositionDeltas.map((positions, index) => ({
   NORMAL: floatAccessor(morphNormalDeltas[index], "VEC3"),
 }));
 const skinIndexAccessor = indexAccessor(skinTriangles);
-const boxerIndexAccessor = indexAccessor(boxerTriangles);
 
 const skinPng = fs.readFileSync(path.join(sourceDir, "skin.png"));
 const imageBufferView = addBuffer(skinPng);
@@ -291,15 +260,9 @@ const gltf = {
     name: "HumanBody",
     weights: shapeDefinitions.map(() => 0),
     extras: { targetNames: shapeDefinitions.map(([name]) => name) },
-    primitives: [
-      { attributes, indices: skinIndexAccessor, material: 0, targets: morphAccessors },
-      { attributes, indices: boxerIndexAccessor, material: 1, targets: morphAccessors },
-    ],
+    primitives: [{ attributes, indices: skinIndexAccessor, material: 0, targets: morphAccessors }],
   }],
-  materials: [
-    { name: "Skin", pbrMetallicRoughness: { baseColorTexture: { index: 0 }, metallicFactor: 0, roughnessFactor: 0.72 }, doubleSided: false },
-    { name: "BoxerBriefs", pbrMetallicRoughness: { baseColorFactor: [0.025, 0.032, 0.038, 1], metallicFactor: 0, roughnessFactor: 0.84 }, doubleSided: true },
-  ],
+  materials: [{ name: "Skin", pbrMetallicRoughness: { baseColorTexture: { index: 0 }, metallicFactor: 0, roughnessFactor: 0.72 }, doubleSided: false }],
   textures: [{ sampler: 0, source: 0 }],
   samplers: [{ magFilter: 9729, minFilter: 9987, wrapS: 10497, wrapT: 10497 }],
   images: [{ name: "MakeHumanSkin", bufferView: imageBufferView, mimeType: "image/png" }],
@@ -327,4 +290,4 @@ binHeader.writeUInt32LE(0x004e4942, 4);
 
 fs.mkdirSync(path.dirname(outputFile), { recursive: true });
 fs.writeFileSync(outputFile, Buffer.concat([header, jsonHeader, paddedJson, binHeader, paddedBin]));
-console.log(JSON.stringify({ outputFile, vertices: basePositions.length, skinTriangles: skinTriangles.length, boxerTriangles: boxerTriangles.length, bytes: fs.statSync(outputFile).size }));
+console.log(JSON.stringify({ outputFile, vertices: basePositions.length, skinTriangles: skinTriangles.length, bytes: fs.statSync(outputFile).size }));
