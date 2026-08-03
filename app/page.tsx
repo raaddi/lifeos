@@ -18,13 +18,13 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       url: origin,
       locale: "pl_PL",
-      images: [{ url: `${origin}/og-lobby-v2.png`, width: 1672, height: 941, alt: "LifeOS — w centrum jesteś Ty" }],
+      images: [{ url: `${origin}/og-command-center-v3.png`, width: 1672, height: 941, alt: "LifeOS — Ty ustawiasz kierunek" }],
     },
     twitter: {
       card: "summary_large_image",
       title: "LifeOS — centrum dowodzenia",
       description: "Twoja postać, dziedziny życia, plan i postęp w jednym intuicyjnym systemie.",
-      images: [`${origin}/og-lobby-v2.png`],
+      images: [`${origin}/og-command-center-v3.png`],
     },
   };
 }

@@ -105,23 +105,26 @@ export default function LifeOS() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem("lifeos-lobby-v2");
-      if (raw) {
-        const saved = JSON.parse(raw) as SavedState;
-        if (saved.profile) {
-          const completeProfile = { ...initialProfile, ...saved.profile };
-          setProfile(completeProfile);
-          setDraftProfile(completeProfile);
+    const restoreProfile = window.setTimeout(() => {
+      try {
+        const raw = window.localStorage.getItem("lifeos-lobby-v2");
+        if (raw) {
+          const saved = JSON.parse(raw) as SavedState;
+          if (saved.profile) {
+            const completeProfile = { ...initialProfile, ...saved.profile };
+            setProfile(completeProfile);
+            setDraftProfile(completeProfile);
+          }
+          if (Array.isArray(saved.missions)) setMissions(saved.missions);
+          if (Array.isArray(saved.notes)) setNotes(saved.notes);
         }
-        if (Array.isArray(saved.missions)) setMissions(saved.missions);
-        if (Array.isArray(saved.notes)) setNotes(saved.notes);
+      } catch {
+        // Keep useful defaults when local storage is unavailable.
       }
-    } catch {
-      // Keep useful defaults when local storage is unavailable.
-    }
-    setReady(true);
+      setReady(true);
+    }, 0);
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    return () => window.clearTimeout(restoreProfile);
   }, []);
 
   useEffect(() => {
@@ -143,6 +146,7 @@ export default function LifeOS() {
   const finished = missions.filter((mission) => mission.done).length;
   const dailyProgress = missions.length ? Math.round((finished / missions.length) * 100) : 0;
   const level = 1 + finished;
+  const overallBalance = Math.round(areas.reduce((sum, area) => sum + area.score, 0) / areas.length);
 
   function toggleMission(id: string) {
     setMissions((items) => items.map((mission) => mission.id === id ? { ...mission, done: !mission.done } : mission));
@@ -207,7 +211,7 @@ export default function LifeOS() {
         <div className="dock-level"><span>LVL</span><strong>{String(level).padStart(2, "0")}</strong></div>
       </aside>
 
-      <main className="game-main">
+      <main className={`game-main ${activeTab === "lobby" ? "has-intel" : ""}`}>
         {activeTab === "lobby" && (
           <Lobby
             profile={profile}
@@ -222,50 +226,52 @@ export default function LifeOS() {
         {activeTab === "notes" && <NotesView notes={notes} draft={noteDraft} setDraft={setNoteDraft} addNote={addNote} />}
       </main>
 
-      <aside className="intel-panel">
-        <section className="identity-card">
-          <div>
-            <span className="micro-label">Profil użytkownika</span>
-            <h2>{profile.name}</h2>
-            <p>{profile.mainFocus}</p>
-          </div>
-          <button type="button" onClick={() => { setDraftProfile(profile); setProfileOpen(true); }}>Edytuj</button>
-          <div className="identity-stats"><span><strong>{profile.height}</strong> cm</span><span><strong>{profile.weight}</strong> kg</span><span><strong>{profile.bodyFat}%</strong> body fat</span></div>
-        </section>
+      {activeTab === "lobby" && (
+        <aside className="intel-panel">
+          <section className="command-brief">
+            <div className="brief-heading">
+              <span className="profile-monogram">{profile.name.slice(0, 1).toUpperCase()}</span>
+              <div><span className="micro-label">Aktywny profil</span><h2>{profile.name}</h2><p>{profile.mainFocus}</p></div>
+              <button type="button" onClick={() => { setDraftProfile(profile); setProfileOpen(true); }}>Ustaw</button>
+            </div>
+            <div className="brief-stats">
+              <span><small>Balans</small><strong>{overallBalance}</strong></span>
+              <span><small>Wykonane</small><strong>{finished}/{missions.length}</strong></span>
+              <span><small>Poziom</small><strong>{String(level).padStart(2, "0")}</strong></span>
+            </div>
+          </section>
 
-        <section className="area-intel" style={{ "--accent": currentArea.color } as CSSProperties}>
-          <div className="area-intel-top">
-            <span className="area-large-icon">{currentArea.icon}</span>
-            <div><span className="micro-label">Wybrany obszar</span><h2>{currentArea.label}</h2></div>
-            <div className="mini-ring" style={{ "--value": `${currentArea.score * 3.6}deg` } as CSSProperties}><strong>{currentArea.score}</strong></div>
-          </div>
-          <p>{currentArea.goal}</p>
-          <div className="reflection"><span>Pytanie na dziś</span><strong>{currentArea.question}</strong></div>
-          <div className="area-metric"><span>Główna miara</span><strong>{currentArea.metric}</strong></div>
-        </section>
+          <section className="focus-card" style={{ "--accent": currentArea.color } as CSSProperties}>
+            <div className="focus-kicker"><span>Aktywny obszar</span><strong>{currentArea.score}<small>/100</small></strong></div>
+            <div className="focus-title"><span>{currentArea.icon}</span><h2>{currentArea.label}</h2></div>
+            <p>{currentArea.goal}</p>
+            <div className="next-move"><span>Następny ruch</span><strong>{currentArea.question}</strong></div>
+            <div className="focus-measure"><span>Mierz przez</span><strong>{currentArea.metric}</strong></div>
+          </section>
 
-        <section className="missions-panel">
-          <div className="panel-title"><div><span className="micro-label">Plan minimum</span><h2>Dzisiejsze misje</h2></div><span>{finished}/{missions.length}</span></div>
-          <div className="mission-progress"><i style={{ width: `${dailyProgress}%` }} /></div>
-          <div className="mission-list">
-            {missions.slice(0, 4).map((mission, index) => {
-              const missionArea = areaById(mission.area);
-              return (
-                <button type="button" key={mission.id} className={mission.done ? "mission done" : "mission"} onClick={() => toggleMission(mission.id)}>
-                  <span className="mission-index">{String(index + 1).padStart(2, "0")}</span>
-                  <i className="mission-check">{mission.done ? "✓" : ""}</i>
-                  <span><strong>{mission.title}</strong><small><i style={{ background: missionArea.color }} />{missionArea.label} · {mission.duration}</small></span>
-                </button>
-              );
-            })}
-          </div>
-          <form className="mission-add" onSubmit={addMission}>
-            <label className="sr-only" htmlFor="new-mission">Dodaj misję</label>
-            <input id="new-mission" value={missionDraft} onChange={(event) => setMissionDraft(event.target.value)} placeholder="Dodaj następny krok…" />
-            <button type="submit" aria-label="Dodaj misję">+</button>
-          </form>
-        </section>
-      </aside>
+          <section className="missions-panel">
+            <div className="panel-title"><div><span className="micro-label">Dzisiaj</span><h2>Plan minimum</h2></div><span>{dailyProgress}%</span></div>
+            <div className="mission-progress"><i style={{ width: `${dailyProgress}%` }} /></div>
+            <div className="mission-list">
+              {missions.slice(0, 4).map((mission, index) => {
+                const missionArea = areaById(mission.area);
+                return (
+                  <button type="button" key={mission.id} className={mission.done ? "mission done" : "mission"} onClick={() => toggleMission(mission.id)}>
+                    <span className="mission-index">{String(index + 1).padStart(2, "0")}</span>
+                    <i className="mission-check">{mission.done ? "✓" : ""}</i>
+                    <span><strong>{mission.title}</strong><small><i style={{ background: missionArea.color }} />{missionArea.label} · {mission.duration}</small></span>
+                  </button>
+                );
+              })}
+            </div>
+            <form className="mission-add" onSubmit={addMission}>
+              <label className="sr-only" htmlFor="new-mission">Dodaj misję</label>
+              <input id="new-mission" value={missionDraft} onChange={(event) => setMissionDraft(event.target.value)} placeholder="Dodaj konkretny krok" />
+              <button type="submit" aria-label="Dodaj misję">+</button>
+            </form>
+          </section>
+        </aside>
+      )}
 
       <nav className="mobile-game-nav" aria-label="Nawigacja mobilna">
         {topTabs.map((tab) => <button key={tab.id} type="button" className={activeTab === tab.id ? "active" : ""} onClick={() => setActiveTab(tab.id)}><span>{tab.id === "lobby" ? "⌂" : tab.id === "plan" ? "▦" : tab.id === "progress" ? "◫" : "≡"}</span>{tab.label}</button>)}
@@ -304,41 +310,63 @@ function Lobby({ profile, setProfile, selectedArea, setSelectedArea, setProfileO
   const weight = Number(profile.weight) || 70;
   const bodyFat = Number(profile.bodyFat) || 18;
   const composition = bodyComposition(height, weight, bodyFat);
+  const overallBalance = Math.round(areas.reduce((sum, area) => sum + area.score, 0) / areas.length);
+  const weakestArea = [...areas].sort((first, second) => first.score - second.score)[0];
 
   function updateBody(field: "height" | "weight" | "bodyFat", value: string) {
     setProfile({ ...profile, [field]: value });
   }
 
   return (
-    <section className="lobby-stage">
-      <div className="stage-heading"><span className="micro-label">Mapa życia / tryb główny</span><h1>W centrum jesteś Ty.</h1><p>Wybierz obszar, sprawdź jego stan i ustal jeden następny ruch.</p></div>
-      <div className="avatar-aura aura-one" /><div className="avatar-aura aura-two" />
-      <div className="avatar-plate"><span>Aktywny profil</span><strong>{profile.name}</strong><small>{profile.height} cm · {profile.weight} kg</small></div>
-      <Avatar3D heightCm={height} weightKg={weight} bodyFat={bodyFat} />
-      <button className="customize-avatar" type="button" onClick={() => setProfileOpen(true)}><span>◎</span> Edytuj dane ciała</button>
-      <section className="body-controls" aria-label="Parametry ciała">
-        <div className="body-controls-title"><div><span className="micro-label">Model ciała</span><strong>Deformacja na żywo</strong></div><span>MORPH 3D</span></div>
-        <label><span>Wzrost <strong>{height} cm</strong></span><input type="range" min="145" max="210" step="1" value={height} onChange={(event) => updateBody("height", event.target.value)} /></label>
-        <label><span>Waga <strong>{weight} kg</strong></span><input type="range" min="40" max="160" step="1" value={weight} onChange={(event) => updateBody("weight", event.target.value)} /></label>
-        <label><span>Body fat <strong>{bodyFat}%</strong></span><input type="range" min="5" max="45" step="1" value={bodyFat} onChange={(event) => updateBody("bodyFat", event.target.value)} /></label>
-        <div className="body-output"><span><small>Masa beztłuszczowa</small><strong>{composition.leanMass.toFixed(1)} kg</strong></span><span><small>FFMI</small><strong>{composition.ffmi.toFixed(1)}</strong></span><span><small>Muskulatura</small><strong>{Math.round(composition.muscle * 100)}%</strong></span></div>
-        <p>Waga i body fat wyznaczają masę beztłuszczową oraz FFMI, a model płynnie zmienia wzrost, umięśnienie i ilość tkanki tłuszczowej.</p>
-      </section>
-      <div className="life-orbit" aria-label="Dziedziny życia">
-        {areas.map((area) => (
-          <button
-            key={area.id}
-            type="button"
-            className={`life-node node-${area.id} ${selectedArea === area.id ? "active" : ""}`}
-            style={{ "--node-color": area.color, "--node-score": `${area.score}%` } as CSSProperties}
-            onClick={() => setSelectedArea(area.id)}
-            aria-pressed={selectedArea === area.id}
-          >
-            <span className="node-icon">{area.icon}</span>
-            <span className="node-copy"><strong>{area.label}</strong><small>{area.score}%</small></span>
-            <i className="node-bar"><em /></i>
-          </button>
-        ))}
+    <section className="command-lobby">
+      <header className="lobby-heading">
+        <div><span className="micro-label">Centrum operacyjne / {polishDate()}</span><h1>Ty ustawiasz kierunek.</h1><p>Jedno spojrzenie na sytuację. Jeden obszar uwagi. Kilka konkretnych ruchów.</p></div>
+        <div className="balance-readout"><span>Balans systemu</span><strong>{overallBalance}<small>/100</small></strong><i><em style={{ width: `${overallBalance}%` }} /></i></div>
+      </header>
+
+      <div className="lobby-grid">
+        <aside className="area-selector" aria-label="Dziedziny życia">
+          <div className="selector-heading"><div><span className="micro-label">Obszary życia</span><strong>Wybierz priorytet</strong></div><small>{areas.length}</small></div>
+          <div className="area-list">
+            {areas.map((area) => (
+              <button
+                key={area.id}
+                type="button"
+                className={selectedArea === area.id ? "area-row active" : "area-row"}
+                style={{ "--area-color": area.color, "--area-score": `${area.score}%` } as CSSProperties}
+                onClick={() => setSelectedArea(area.id)}
+                aria-pressed={selectedArea === area.id}
+              >
+                <span className="area-row-icon">{area.icon}</span>
+                <span className="area-row-copy"><strong>{area.label}</strong><small>{area.metric}</small><i><em /></i></span>
+                <b>{area.score}</b>
+              </button>
+            ))}
+          </div>
+          <div className="selector-footer"><span>Największa rezerwa</span><strong><i style={{ background: weakestArea.color }} />{weakestArea.label} · {weakestArea.score}/100</strong></div>
+        </aside>
+
+        <section className="operator-stage" aria-label="Model użytkownika 3D">
+          <div className="operator-toolbar">
+            <div><span className="operator-state"><i /> MODEL AKTYWNY</span><strong>{profile.name}</strong><small>{height} cm · {weight} kg · {bodyFat}% BF</small></div>
+            <button type="button" onClick={() => setProfileOpen(true)}>Edytuj profil <span>↗</span></button>
+          </div>
+          <div className="operator-grid" aria-hidden="true" />
+          <Avatar3D heightCm={height} weightKg={weight} bodyFat={bodyFat} />
+
+          <section className="body-console" aria-label="Parametry ciała">
+            <div className="body-console-stats">
+              <span><small>Masa beztłuszczowa</small><strong>{composition.leanMass.toFixed(1)} kg</strong></span>
+              <span><small>FFMI</small><strong>{composition.ffmi.toFixed(1)}</strong></span>
+              <span><small>Muskulatura</small><strong>{Math.round(composition.muscle * 100)}%</strong></span>
+            </div>
+            <div className="body-tuners">
+              <label><span>Wzrost <strong>{height} cm</strong></span><input type="range" min="145" max="210" step="1" value={height} onChange={(event) => updateBody("height", event.target.value)} /></label>
+              <label><span>Waga <strong>{weight} kg</strong></span><input type="range" min="40" max="160" step="1" value={weight} onChange={(event) => updateBody("weight", event.target.value)} /></label>
+              <label><span>Body fat <strong>{bodyFat}%</strong></span><input type="range" min="5" max="45" step="1" value={bodyFat} onChange={(event) => updateBody("bodyFat", event.target.value)} /></label>
+            </div>
+          </section>
+        </section>
       </div>
     </section>
   );
