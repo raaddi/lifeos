@@ -8,9 +8,15 @@ public sealed class WorkspaceService(IDbContextFactory<LifeOsDbContext> contextF
     public async Task<DashboardSnapshot> GetDashboardAsync(CancellationToken cancellationToken = default)
     {
         await using var database = await contextFactory.CreateDbContextAsync(cancellationToken);
-        var tasks = await database.Tasks.OrderBy(task => task.IsCompleted).ThenBy(task => task.CreatedAt).ToListAsync(cancellationToken);
+        var tasks = (await database.Tasks.AsNoTracking().ToListAsync(cancellationToken))
+            .OrderBy(task => task.IsCompleted)
+            .ThenBy(task => task.CreatedAt)
+            .ToList();
         var routines = await database.Routines.OrderBy(routine => routine.Name).ToListAsync(cancellationToken);
-        var notes = await database.Notes.OrderByDescending(note => note.CreatedAt).Take(30).ToListAsync(cancellationToken);
+        var notes = (await database.Notes.AsNoTracking().ToListAsync(cancellationToken))
+            .OrderByDescending(note => note.CreatedAt)
+            .Take(30)
+            .ToList();
         var areas = await database.Areas.OrderBy(area => area.Name).ToListAsync(cancellationToken);
         return new DashboardSnapshot(tasks, routines, notes, areas);
     }
