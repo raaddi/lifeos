@@ -8,12 +8,21 @@
     <meta property="og:description" content="Zadania, notatki, rutyny i obszary życia w jednym biznesowym panelu." />
 </HeadContent>
 
-<div class="app-shell">
-    <aside class="sidebar">
-        <button class="brand" type="button" @onclick='() => SetView("Pulpit")'>
-            <span>L</span>
-            <div><strong>LifeOS</strong><small>Personal workspace</small></div>
-        </button>
+<div class="@ShellClass">
+    @if (_mobileMenuOpen)
+    {
+        <button class="menu-overlay" type="button" aria-label="Zamknij menu" @onclick="CloseMobileMenu"></button>
+    }
+
+    <aside class="@SidebarClass">
+        <div class="sidebar-header">
+            <button class="brand" type="button" title="LifeOS" @onclick='() => SetView("Pulpit")'>
+                <span>L</span>
+                <div><strong>LifeOS</strong><small>Personal workspace</small></div>
+            </button>
+            <button class="sidebar-collapse" type="button" aria-label="@(_menuCollapsed ? "Rozwiń menu" : "Zwiń menu")" title="@(_menuCollapsed ? "Rozwiń menu" : "Zwiń menu")" @onclick="ToggleMenu">@(_menuCollapsed ? "›" : "‹")</button>
+            <button class="mobile-menu-close" type="button" aria-label="Zamknij menu" @onclick="CloseMobileMenu">×</button>
+        </div>
 
         <div class="workspace-card">
             <span>RL</span>
@@ -21,18 +30,36 @@
             <b>⌄</b>
         </div>
 
-        <nav class="side-nav" aria-label="Główne sekcje">
-            <small>ORGANIZACJA</small>
-            @foreach (var item in Navigation)
+        <div class="quick-create">
+            <button class="quick-create-trigger" type="button" aria-expanded="@_quickMenuOpen" @onclick="ToggleQuickMenu">
+                <span>+</span><strong>Utwórz</strong><kbd>N</kbd>
+            </button>
+            @if (_quickMenuOpen)
             {
-                <button type="button" class="@NavClass(item.Name)" @onclick="() => SetView(item.Name)">
-                    <span>@item.Short</span>
-                    @item.Name
-                    @if (item.Name == "Mój dzień" && Dashboard is not null)
+                <div class="quick-create-menu">
+                    <button type="button" @onclick='() => OpenComposer("Mój dzień")'><span>✓</span><div><strong>Nowe zadanie</strong><small>Dodaj konkretny następny krok</small></div></button>
+                    <button type="button" @onclick='() => OpenComposer("Notatki")'><span>✎</span><div><strong>Nowa notatka</strong><small>Zapisz pomysł lub decyzję</small></div></button>
+                </div>
+            }
+        </div>
+
+        <nav class="side-nav" aria-label="Główne sekcje">
+            @foreach (var group in NavigationGroups)
+            {
+                <section class="nav-group">
+                    <small>@group.Name</small>
+                    @foreach (var item in group.Items)
                     {
-                        <b>@Dashboard.OpenTasks</b>
+                        <button type="button" class="@NavClass(item.Name)" title="@item.Name" @onclick="() => SetView(item.Name)">
+                            <span class="nav-icon">@item.Icon</span>
+                            <em>@item.Name</em>
+                            @if (item.Name == "Mój dzień" && Dashboard is not null)
+                            {
+                                <b>@Dashboard.OpenTasks</b>
+                            }
+                        </button>
                     }
-                </button>
+                </section>
             }
         </nav>
 
@@ -45,11 +72,12 @@
             </section>
         }
 
-        <div class="user-card"><span>RL</span><div><strong>Radek</strong><small>Profil prywatny</small></div><button type="button" aria-label="Ustawienia">•••</button></div>
+        <div class="user-card"><span>RL</span><div><strong>Radek</strong><small>Profil prywatny</small></div><button type="button" aria-label="Ustawienia" title="Ustawienia">•••</button></div>
     </aside>
 
     <section class="workspace">
         <header class="topbar">
+            <button class="mobile-menu-trigger" type="button" aria-label="Otwórz menu" @onclick="OpenMobileMenu"><span></span><span></span><span></span></button>
             <label class="search-box">
                 <span>⌕</span>
                 <input value="@_search" @oninput="SearchChanged" placeholder="Szukaj w zadaniach i notatkach…" />
@@ -58,7 +86,7 @@
             <div class="top-actions">
                 <span>@PolishDate</span>
                 <button class="icon-button" type="button" aria-label="Powiadomienia">◌</button>
-                <button class="primary-button" type="button" @onclick='() => SetView("Mój dzień")'>+ Nowe zadanie</button>
+                <button class="primary-button" type="button" @onclick='() => OpenComposer("Mój dzień")'>+ Nowe zadanie</button>
             </div>
         </header>
 
@@ -113,7 +141,7 @@
     <nav class="mobile-nav" aria-label="Nawigacja mobilna">
         @foreach (var item in Navigation)
         {
-            <button type="button" class="@NavClass(item.Name)" @onclick="() => SetView(item.Name)"><span>@item.Short</span>@item.Name</button>
+            <button type="button" class="@NavClass(item.Name)" @onclick="() => SetView(item.Name)"><span>@item.Icon</span>@item.MobileName</button>
         }
     </nav>
 </div>
@@ -126,15 +154,19 @@
     private string _search = string.Empty;
     private AreaKey _selectedArea = AreaKey.Business;
     private int _duration = 30;
+    private bool _menuCollapsed;
+    private bool _mobileMenuOpen;
+    private bool _quickMenuOpen;
 
-    private static readonly NavItem[] Navigation =
+    private static readonly NavGroup[] NavigationGroups =
     [
-        new("Pulpit", "P"),
-        new("Mój dzień", "D"),
-        new("Plan tygodnia", "T"),
-        new("Notatki", "N"),
-        new("Obszary życia", "O")
+        new("START", [new("Pulpit", "⌂", "Pulpit")]),
+        new("PLANOWANIE", [new("Mój dzień", "✓", "Dzisiaj"), new("Plan tygodnia", "▦", "Tydzień")]),
+        new("WIEDZA", [new("Notatki", "✎", "Notatki")]),
+        new("SYSTEM", [new("Obszary życia", "◫", "Obszary")])
     ];
+
+    private static IEnumerable<NavItem> Navigation => NavigationGroups.SelectMany(group => group.Items);
 
     private static readonly Dictionary<string, ViewHeading> Headings = new()
     {
@@ -148,6 +180,8 @@
     private ViewHeading ViewCopy => Headings[_view];
     private string PolishDate => DateTime.Today.ToString("dddd, d MMMM", CultureInfo.GetCultureInfo("pl-PL"));
     private IReadOnlyList<SearchResult> SearchResults => BuildSearchResults();
+    private string ShellClass => _menuCollapsed ? "app-shell menu-collapsed" : "app-shell";
+    private string SidebarClass => $"sidebar{(_menuCollapsed ? " collapsed" : string.Empty)}{(_mobileMenuOpen ? " mobile-open" : string.Empty)}";
 
     protected override async Task OnInitializedAsync() => await ReloadAsync();
 
@@ -157,6 +191,27 @@
     {
         _view = view;
         _search = string.Empty;
+        _quickMenuOpen = false;
+        _mobileMenuOpen = false;
+    }
+
+    private void ToggleMenu() => _menuCollapsed = !_menuCollapsed;
+    private void ToggleQuickMenu() => _quickMenuOpen = !_quickMenuOpen;
+    private void OpenMobileMenu()
+    {
+        _menuCollapsed = false;
+        _mobileMenuOpen = true;
+    }
+    private void CloseMobileMenu()
+    {
+        _mobileMenuOpen = false;
+        _quickMenuOpen = false;
+    }
+
+    private void OpenComposer(string view)
+    {
+        SetView(view);
+        if (view == "Notatki") _newNote = string.Empty;
     }
 
     private string NavClass(string name) => _view == name ? "active" : string.Empty;
@@ -264,7 +319,8 @@
         }
     }
 
-    private sealed record NavItem(string Name, string Short);
+    private sealed record NavGroup(string Name, NavItem[] Items);
+    private sealed record NavItem(string Name, string Icon, string MobileName);
     private sealed record ViewHeading(string Eyebrow, string Title, string Description);
     private sealed record SearchResult(string Type, string Content);
 }
