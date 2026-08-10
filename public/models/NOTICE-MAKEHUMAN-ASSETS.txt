@@ -1,9 +1,0 @@
-LifeOS parametric body model was generated from the MakeHuman hm08 base mesh,
-macro targets and skin assets.
-
-The MakeHuman project explicitly releases its bundled graphical assets,
-including the base mesh, targets, textures and clothes, under CC0 1.0 Universal.
-
-Source: https://github.com/makehumancommunity/makehuman
-Assets: https://github.com/makehumancommunity/makehuman-assets
-License: https://creativecommons.org/publicdomain/zero/1.0/

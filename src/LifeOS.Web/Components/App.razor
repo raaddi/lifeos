@@ -1,0 +1,23 @@
+﻿<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="description" content="LifeOS — biznesowy system do organizacji zadań, notatek, rutyn i obszarów życia." />
+    <base href="/" />
+    <ResourcePreloader />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["LifeOS.Web.styles.css"]" />
+    <ImportMap />
+    <HeadOutlet @rendermode="InteractiveServer" />
+</head>
+
+<body>
+    <Routes @rendermode="InteractiveServer" />
+    <ReconnectModal />
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+</body>
+
+</html>

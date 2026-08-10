@@ -1,0 +1,18 @@
+#blazor-error-ui {
+    display: none;
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 1000;
+    max-width: 440px;
+    padding: 14px 18px;
+    border: 1px solid #e5b8b8;
+    border-radius: 10px;
+    background: #fff4f4;
+    color: #7b2525;
+    box-shadow: 0 12px 40px rgba(25, 35, 50, .14);
+    font-size: 13px;
+}
+
+#blazor-error-ui .reload { color: inherit; font-weight: 700; }
+#blazor-error-ui .dismiss { margin-left: 12px; cursor: pointer; }

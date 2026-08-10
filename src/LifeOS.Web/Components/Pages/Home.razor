@@ -1,0 +1,270 @@
+@page "/"
+@inject IWorkspaceService Workspace
+
+<PageTitle>LifeOS — osobisty system zarządzania</PageTitle>
+
+<HeadContent>
+    <meta property="og:title" content="LifeOS — osobisty system zarządzania" />
+    <meta property="og:description" content="Zadania, notatki, rutyny i obszary życia w jednym biznesowym panelu." />
+</HeadContent>
+
+<div class="app-shell">
+    <aside class="sidebar">
+        <button class="brand" type="button" @onclick='() => SetView("Pulpit")'>
+            <span>L</span>
+            <div><strong>LifeOS</strong><small>Personal workspace</small></div>
+        </button>
+
+        <div class="workspace-card">
+            <span>RL</span>
+            <div><strong>Radek Lesiewicz</strong><small>Prywatny obszar roboczy</small></div>
+            <b>⌄</b>
+        </div>
+
+        <nav class="side-nav" aria-label="Główne sekcje">
+            <small>ORGANIZACJA</small>
+            @foreach (var item in Navigation)
+            {
+                <button type="button" class="@NavClass(item.Name)" @onclick="() => SetView(item.Name)">
+                    <span>@item.Short</span>
+                    @item.Name
+                    @if (item.Name == "Mój dzień" && Dashboard is not null)
+                    {
+                        <b>@Dashboard.OpenTasks</b>
+                    }
+                </button>
+            }
+        </nav>
+
+        @if (Dashboard?.Areas.FirstOrDefault(area => area.Key == _selectedArea) is { } priority)
+        {
+            <section class="priority-card">
+                <small>AKTUALNY PRIORYTET</small>
+                <strong><i style="background: @priority.Color"></i>@priority.Name</strong>
+                <p>@priority.Objective</p>
+            </section>
+        }
+
+        <div class="user-card"><span>RL</span><div><strong>Radek</strong><small>Profil prywatny</small></div><button type="button" aria-label="Ustawienia">•••</button></div>
+    </aside>
+
+    <section class="workspace">
+        <header class="topbar">
+            <label class="search-box">
+                <span>⌕</span>
+                <input value="@_search" @oninput="SearchChanged" placeholder="Szukaj w zadaniach i notatkach…" />
+                <kbd>Ctrl K</kbd>
+            </label>
+            <div class="top-actions">
+                <span>@PolishDate</span>
+                <button class="icon-button" type="button" aria-label="Powiadomienia">◌</button>
+                <button class="primary-button" type="button" @onclick='() => SetView("Mój dzień")'>+ Nowe zadanie</button>
+            </div>
+        </header>
+
+        <main class="content">
+            @if (Dashboard is null)
+            {
+                <div class="loading-state"><i></i><strong>Przygotowuję Twój pulpit…</strong></div>
+            }
+            else if (!string.IsNullOrWhiteSpace(_search))
+            {
+                <header class="page-heading"><div><span>WYSZUKIWANIE</span><h1>Wyniki dla „@_search”</h1><p>Zadania i notatki pasujące do zapytania.</p></div><button class="secondary-button" type="button" @onclick="ClearSearch">Wyczyść</button></header>
+                <section class="search-results">
+                    @foreach (var result in SearchResults)
+                    {
+                        <article><span>@result.Type</span><strong>@result.Content</strong></article>
+                    }
+                    @if (SearchResults.Count == 0)
+                    {
+                        <div class="empty-state"><strong>Brak wyników</strong><p>Spróbuj krótszego hasła.</p></div>
+                    }
+                </section>
+            }
+            else
+            {
+                <header class="page-heading">
+                    <div><span>@ViewCopy.Eyebrow</span><h1>@ViewCopy.Title</h1><p>@ViewCopy.Description</p></div>
+                    <div class="system-status"><span><i></i>System gotowy</span><strong>@PolishDate</strong></div>
+                </header>
+
+                @switch (_view)
+                {
+                    case "Pulpit":
+                        @DashboardView()
+                        break;
+                    case "Mój dzień":
+                        @TasksView()
+                        break;
+                    case "Plan tygodnia":
+                        @WeekView()
+                        break;
+                    case "Notatki":
+                        @NotesView()
+                        break;
+                    case "Obszary życia":
+                        @AreasView()
+                        break;
+                }
+            }
+        </main>
+    </section>
+
+    <nav class="mobile-nav" aria-label="Nawigacja mobilna">
+        @foreach (var item in Navigation)
+        {
+            <button type="button" class="@NavClass(item.Name)" @onclick="() => SetView(item.Name)"><span>@item.Short</span>@item.Name</button>
+        }
+    </nav>
+</div>
+
+@code {
+    private DashboardSnapshot? Dashboard;
+    private string _view = "Pulpit";
+    private string _newTask = string.Empty;
+    private string _newNote = string.Empty;
+    private string _search = string.Empty;
+    private AreaKey _selectedArea = AreaKey.Business;
+    private int _duration = 30;
+
+    private static readonly NavItem[] Navigation =
+    [
+        new("Pulpit", "P"),
+        new("Mój dzień", "D"),
+        new("Plan tygodnia", "T"),
+        new("Notatki", "N"),
+        new("Obszary życia", "O")
+    ];
+
+    private static readonly Dictionary<string, ViewHeading> Headings = new()
+    {
+        ["Pulpit"] = new("PULPIT", "Dzień dobry, Radek", "Najważniejsze informacje i decyzje w jednym miejscu."),
+        ["Mój dzień"] = new("REALIZACJA", "Plan na dzisiaj", "Zarządzaj tym, co rzeczywiście ma zostać zrobione."),
+        ["Plan tygodnia"] = new("PLANOWANIE", "Bieżący tydzień", "Rozłóż priorytety tak, aby plan był ambitny, ale wykonalny."),
+        ["Notatki"] = new("WIEDZA", "Notatki i pomysły", "Szybki zapis decyzji, obserwacji i rzeczy do sprawdzenia."),
+        ["Obszary życia"] = new("PERSPEKTYWA", "Obszary życia", "Monitoruj kierunek bez zamieniania życia w ranking punktów.")
+    };
+
+    private ViewHeading ViewCopy => Headings[_view];
+    private string PolishDate => DateTime.Today.ToString("dddd, d MMMM", CultureInfo.GetCultureInfo("pl-PL"));
+    private IReadOnlyList<SearchResult> SearchResults => BuildSearchResults();
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync() => Dashboard = await Workspace.GetDashboardAsync();
+
+    private void SetView(string view)
+    {
+        _view = view;
+        _search = string.Empty;
+    }
+
+    private string NavClass(string name) => _view == name ? "active" : string.Empty;
+    private void ClearSearch() => _search = string.Empty;
+    private void SearchChanged(ChangeEventArgs args) => _search = args.Value?.ToString() ?? string.Empty;
+
+    private async Task AddTaskAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newTask)) return;
+        await Workspace.AddTaskAsync(_newTask, _selectedArea, _duration);
+        _newTask = string.Empty;
+        await ReloadAsync();
+    }
+
+    private async Task ToggleTaskAsync(Guid id)
+    {
+        await Workspace.ToggleTaskAsync(id);
+        await ReloadAsync();
+    }
+
+    private async Task AddNoteAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newNote)) return;
+        await Workspace.AddNoteAsync(_newNote);
+        _newNote = string.Empty;
+        await ReloadAsync();
+    }
+
+    private async Task ToggleRoutineAsync(Guid id)
+    {
+        await Workspace.ToggleRoutineAsync(id);
+        await ReloadAsync();
+    }
+
+    private IReadOnlyList<SearchResult> BuildSearchResults()
+    {
+        if (Dashboard is null || string.IsNullOrWhiteSpace(_search)) return [];
+        return Dashboard.Tasks
+            .Where(task => task.Title.Contains(_search, StringComparison.CurrentCultureIgnoreCase))
+            .Select(task => new SearchResult("Zadanie", task.Title))
+            .Concat(Dashboard.Notes
+                .Where(note => note.Content.Contains(_search, StringComparison.CurrentCultureIgnoreCase))
+                .Select(note => new SearchResult("Notatka", note.Content)))
+            .Take(10)
+            .ToArray();
+    }
+
+    private RenderFragment DashboardView() => @<>
+        <section class="metrics">
+            <article><div><span>Realizacja dnia</span><strong>@Dashboard!.TaskProgress%</strong></div><em><i style="width: @(Dashboard.TaskProgress)%"></i></em><p>@Dashboard.CompletedTasks z @Dashboard.Tasks.Count zadań zakończonych</p></article>
+            <article><div><span>Otwarte zadania</span><strong>@Dashboard.OpenTasks</strong></div><b>@(Dashboard.Tasks.FirstOrDefault(task => !task.IsCompleted)?.Title ?? "Plan dnia zakończony")</b><p>Najbliższy konkretny krok</p></article>
+            <article><div><span>Rutyny</span><strong>@Dashboard.CompletedRoutines/@Dashboard.Routines.Count</strong></div><em><i class="green" style="width: @(Dashboard.Routines.Count == 0 ? 0 : Dashboard.CompletedRoutines * 100 / Dashboard.Routines.Count)%"></i></em><p>Regularność stabilizuje system</p></article>
+            <article><div><span>Balans obszarów</span><strong>@Dashboard.Balance</strong></div><em><i class="violet" style="width: @(Dashboard.Balance)%"></i></em><p>Średnia wszystkich obszarów życia</p></article>
+        </section>
+
+        <section class="dashboard-grid">
+            <article class="panel tasks-panel"><header><div><span>DZISIAJ</span><h2>Najważniejsze zadania</h2></div><button type="button" @onclick='() => SetView("Mój dzień")'>Zobacz cały plan</button></header><div class="task-list">@foreach (var task in Dashboard.Tasks.Take(5)) { @TaskRow(task) }</div></article>
+            <article class="panel notes-panel"><header><div><span>SZYBKI ZAPIS</span><h2>Inbox notatek</h2></div><b>@Dashboard.Notes.Count</b></header>@NoteComposer()<div class="note-preview">@if (Dashboard.Notes.Count == 0) { <p>Brak notatek. Wszystko jest uporządkowane.</p> } else { @foreach (var note in Dashboard.Notes.Take(2)) { <p>@note.Content</p> } }</div></article>
+            <article class="panel routines-panel"><header><div><span>SYSTEM DNIA</span><h2>Rutyny</h2></div><b>@Dashboard.CompletedRoutines/@Dashboard.Routines.Count</b></header><div class="routine-list">@foreach (var routine in Dashboard.Routines) { <button type="button" class="@(routine.IsCompletedToday ? "done" : "")" @onclick="() => ToggleRoutineAsync(routine.Id)"><i>@(routine.IsCompletedToday ? "✓" : "")</i><span><strong>@routine.Name</strong><small>@routine.Schedule</small></span></button> }</div></article>
+            <article class="panel areas-panel"><header><div><span>PEŁNY OBRAZ</span><h2>Obszary życia</h2></div><button type="button" @onclick='() => SetView("Obszary życia")'>Szczegóły</button></header><div class="compact-areas">@foreach (var area in Dashboard.Areas) { <button type="button" class="@(area.Key == _selectedArea ? "active" : "")" style="--area-color: @area.Color" @onclick="() => _selectedArea = area.Key"><span><i></i>@area.Name</span><em><b style="width: @(area.Score)%"></b></em><strong>@area.Score</strong></button> }</div></article>
+        </section>
+    </>;
+
+    private RenderFragment TasksView() => @<section class="panel manager-panel">
+        <header><div><span>POSTĘP DNIA</span><h2>@Dashboard!.TaskProgress% zrealizowane</h2></div><b>@Dashboard.OpenTasks otwarte</b></header>
+        @TaskComposer()
+        <div class="task-list large">@foreach (var task in Dashboard.Tasks) { @TaskRow(task) }</div>
+    </section>;
+
+    private RenderFragment WeekView() => @<section class="week-board">
+        @foreach (var day in WeekDays)
+        {
+            var isToday = day.Date == DateTime.Today;
+            <article class="@(isToday ? "today" : "")"><header><div><span>@day.ToString("ddd", CultureInfo.GetCultureInfo("pl-PL"))</span><strong>@day.Day</strong></div><b>@(isToday ? Dashboard!.Tasks.Count : 0)</b></header>@if (isToday) { @foreach (var task in Dashboard!.Tasks) { <button type="button" class="@(task.IsCompleted ? "done" : "")" @onclick="() => ToggleTaskAsync(task.Id)"><i style="background: @Area(task.Area).Color"></i>@task.Title</button> } } else { <button type="button" class="empty-day">+ Dodaj priorytet</button> }</article>
+        }
+    </section>;
+
+    private RenderFragment NotesView() => @<section class="notes-view">
+        @NoteComposer(true)
+        <div class="note-grid">@if (Dashboard!.Notes.Count == 0) { <div class="empty-state"><strong>Inbox jest pusty</strong><p>Pierwsza notatka pojawi się tutaj.</p></div> } else { @foreach (var note in Dashboard.Notes) { <article><span>@note.CreatedAt.ToLocalTime().ToString("d MMM, HH:mm", CultureInfo.GetCultureInfo("pl-PL"))</span><p>@note.Content</p></article> } }</div>
+    </section>;
+
+    private RenderFragment AreasView() => @<section class="area-grid">
+        @foreach (var area in Dashboard!.Areas)
+        {
+            <button type="button" class="@(area.Key == _selectedArea ? "active" : "")" style="--area-color: @area.Color" @onclick="() => _selectedArea = area.Key"><header><span><i></i>@area.Name</span><strong>@area.Score<small>/100</small></strong></header><em><b style="width: @(area.Score)%"></b></em><p>@area.Objective</p><footer>Ustaw jako priorytet <span>→</span></footer></button>
+        }
+    </section>;
+
+    private RenderFragment TaskRow(LifeTask task) => @<button type="button" class="task-row @(task.IsCompleted ? "done" : "")" @onclick="() => ToggleTaskAsync(task.Id)"><i>@(task.IsCompleted ? "✓" : "")</i><span><strong>@task.Title</strong><small><b style="background: @Area(task.Area).Color"></b>@Area(task.Area).Name · @task.DurationMinutes min</small></span><em>@(task.IsCompleted ? "Gotowe" : "Do zrobienia")</em></button>;
+
+    private RenderFragment TaskComposer() => @<div class="task-composer"><select @bind="_selectedArea">@foreach (var area in Dashboard!.Areas) { <option value="@area.Key">@area.Name</option> }</select><input @bind="_newTask" @bind:event="oninput" placeholder="Dodaj konkretne zadanie…" /><select @bind="_duration" aria-label="Czas zadania"><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select><button type="button" @onclick="AddTaskAsync">Dodaj zadanie</button></div>;
+
+    private RenderFragment NoteComposer(bool expanded = false) => @<div class="note-composer @(expanded ? "expanded" : "")"><textarea @bind="_newNote" @bind:event="oninput" placeholder="Zapisz pomysł, decyzję lub rzecz do sprawdzenia…"></textarea><div><span>Zapis w prywatnej bazie LifeOS.</span><button type="button" @onclick="AddNoteAsync">Zapisz notatkę</button></div></div>;
+
+    private LifeArea Area(AreaKey key) => Dashboard!.Areas.First(area => area.Key == key);
+
+    private IEnumerable<DateTime> WeekDays
+    {
+        get
+        {
+            var offset = ((int)DateTime.Today.DayOfWeek + 6) % 7;
+            var monday = DateTime.Today.AddDays(-offset);
+            return Enumerable.Range(0, 7).Select(index => monday.AddDays(index));
+        }
+    }
+
+    private sealed record NavItem(string Name, string Short);
+    private sealed record ViewHeading(string Eyebrow, string Title, string Description);
+    private sealed record SearchResult(string Type, string Content);
+}
