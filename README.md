@@ -1,6 +1,6 @@
 # LifeOS
 
-LifeOS to biznesowa aplikacja do organizacji życia: zadania, plan tygodnia, notatki, rutyny i obszary odpowiedzialności w jednym miejscu.
+LifeOS to biznesowa aplikacja do organizacji życia: zadania, kalendarz, notatki, przypomnienia, projekty, rutyny i uporządkowane rejestry w jednym miejscu.
 
 Projekt został zbudowany od zera w C# na platformie .NET 10. Nie korzysta z poprzedniego frontendu React ani stylistyki gry.
 
@@ -12,6 +12,17 @@ Projekt został zbudowany od zera w C# na platformie .NET 10. Nie korzysta z pop
 - `LifeOS.Tests` — testy jednostkowe xUnit.
 
 Dane deweloperskie są przechowywane w lokalnej bazie `App_Data/lifeos.db`. Warstwa infrastruktury jest wydzielona, dlatego SQLite można później wymienić na PostgreSQL bez przebudowy interfejsu i domeny.
+
+## Ekosystem
+
+Menu jest zorganizowane według sposobu pracy użytkownika:
+
+- **Dzisiaj** — centrum operacyjne z planem, szybkim zapisem i sygnałami wymagającymi uwagi.
+- **Planuj** — zadania, kalendarz, projekty i cele oraz przypomnienia.
+- **Organizuj** — notatki oraz arkusze i rejestry przypominające lekkie połączenie Excela z bazą danych.
+- **Rozwijaj** — rutyny i obszary życia pokazujące długoterminowy kierunek.
+
+Moduły korzystają ze wspólnych danych. Przykładowo zadanie utworzone dla wybranego obszaru pojawia się w planie dnia, kalendarzu, przypomnieniach, projekcie i rejestrze aktywności.
 
 ## Uruchomienie
 
@@ -44,6 +55,6 @@ Po uruchomieniu kontenera aplikacja jest dostępna pod `http://localhost:8080`, 
 
 1. Logowanie i osobne przestrzenie użytkowników.
 2. PostgreSQL dla synchronizacji między komputerem a telefonem.
-3. Kalendarz, cele, projekty i cykliczne przeglądy tygodnia.
-4. Powiadomienia i instalowalna PWA.
-5. Integracje z kalendarzem oraz pocztą.
+3. Pełna edycja terminów, projektów, arkuszy i własnych pól użytkownika.
+4. Powiadomienia systemowe i instalowalna PWA.
+5. Integracje z zewnętrznym kalendarzem oraz pocztą.
