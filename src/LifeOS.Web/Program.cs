@@ -25,10 +25,11 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
-app.UseStaticFiles();
 app.MapStaticAssets();
-app.MapGet("/styles/lifeos.css", (IWebHostEnvironment environment) =>
-    Results.File(Path.Combine(environment.WebRootPath, "app.css"), "text/css"));
+app.MapGet("/framework/blazor.web.js", () =>
+    Results.File(
+        Path.Combine(AppContext.BaseDirectory, "wwwroot", "framework", "blazor.web.js"),
+        "text/javascript"));
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

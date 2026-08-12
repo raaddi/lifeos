@@ -10,6 +10,19 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <CompressionEnabled>false</CompressionEnabled>
   </PropertyGroup>
+
+  <Target Name="CopyBlazorRuntimeForLocalRun" AfterTargets="Build">
+    <MakeDir Directories="$(OutputPath)wwwroot\framework" />
+    <Copy SourceFiles="$(BlazorFrameworkStaticWebAssetRoot)\blazor.web.js"
+          DestinationFiles="$(OutputPath)wwwroot\framework\blazor.web.js" />
+  </Target>
+
+  <Target Name="CopyBlazorRuntimeForPublish" AfterTargets="Publish">
+    <MakeDir Directories="$(PublishDir)wwwroot\framework" />
+    <Copy SourceFiles="$(BlazorFrameworkStaticWebAssetRoot)\blazor.web.js"
+          DestinationFiles="$(PublishDir)wwwroot\framework\blazor.web.js" />
+  </Target>
 
 </Project>
