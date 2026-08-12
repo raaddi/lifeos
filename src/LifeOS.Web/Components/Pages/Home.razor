@@ -16,23 +16,17 @@
 
     <aside class="@SidebarClass">
         <div class="sidebar-header">
-            <button class="brand" type="button" title="LifeOS" @onclick='() => SetView("Centrum")'>
+            <button class="brand" type="button" title="LifeOS" @onclick='() => SetView("Dzisiaj")'>
                 <span><i></i><i></i><i></i><i></i></span>
-                <div><strong>LifeOS</strong><small>Centrum operacyjne</small></div>
+                <div><strong>LifeOS</strong><small>Twój dzień, po Twojemu</small></div>
             </button>
             <button class="sidebar-collapse" type="button" aria-label="@(_menuCollapsed ? "Rozwiń menu" : "Zwiń menu")" title="@(_menuCollapsed ? "Rozwiń menu" : "Zwiń menu")" @onclick="ToggleMenu">@(_menuCollapsed ? "›" : "‹")</button>
             <button class="mobile-menu-close" type="button" aria-label="Zamknij menu" @onclick="CloseMobileMenu">×</button>
         </div>
 
-        <div class="workspace-card">
-            <span>RL</span>
-            <div><strong>Moje życie</strong><small>Wszystkie obszary</small></div>
-            <b title="Dane zapisane">●</b>
-        </div>
-
         <div class="quick-create">
             <button class="quick-create-trigger" type="button" aria-expanded="@_quickMenuOpen" @onclick="ToggleQuickMenu">
-                <span>+</span><strong>Utwórz</strong><kbd>N</kbd>
+                <span>+</span><strong>Dodaj coś</strong><kbd>N</kbd>
             </button>
             @if (_quickMenuOpen)
             {
@@ -68,7 +62,7 @@
             }
         </nav>
 
-        <div class="sidebar-sync"><span><i></i>Dane zsynchronizowane</span><small>Jedno źródło prawdy</small></div>
+        <div class="sidebar-sync"><span><i></i>Wszystko zapisane</span><small>Twoje dane są bezpieczne</small></div>
         <div class="user-card"><span>RL</span><div><strong>Radek</strong><small>Profil prywatny</small></div><button type="button" aria-label="Ustawienia" title="Ustawienia">•••</button></div>
     </aside>
 
@@ -77,7 +71,7 @@
             <button class="mobile-menu-trigger" type="button" aria-label="Otwórz menu" @onclick="OpenMobileMenu"><span></span><span></span><span></span></button>
             <label class="search-box">
                 <span>⌕</span>
-                <input value="@_search" @oninput="SearchChanged" placeholder="Szukaj w całym LifeOS…" />
+                <input value="@_search" @oninput="SearchChanged" placeholder="Znajdź zadanie, notatkę lub projekt…" />
                 <kbd>Ctrl K</kbd>
             </label>
             <div class="top-actions">
@@ -110,12 +104,12 @@
             {
                 <header class="page-heading">
                     <div><span>@ViewCopy.Eyebrow</span><h1>@ViewCopy.Title</h1><p>@ViewCopy.Description</p></div>
-                    <div class="system-status"><span><i></i>System gotowy</span><strong>@PolishDate</strong></div>
+                    <div class="system-status"><span><i></i>Wszystko pod kontrolą</span><strong>@PolishDate</strong></div>
                 </header>
 
                 @switch (_view)
                 {
-                    case "Centrum":
+                    case "Dzisiaj":
                         @DashboardView()
                         break;
                     case "Zadania":
@@ -157,7 +151,7 @@
 
 @code {
     private DashboardSnapshot? Dashboard;
-    private string _view = "Centrum";
+    private string _view = "Dzisiaj";
     private string _newTask = string.Empty;
     private string _newNote = string.Empty;
     private string _search = string.Empty;
@@ -169,26 +163,25 @@
 
     private static readonly NavGroup[] NavigationGroups =
     [
-        new("DZISIAJ", [new("Centrum", "home", "Centrum")]),
-        new("PLANUJ", [new("Zadania", "tasks", "Zadania"), new("Kalendarz", "calendar", "Kalendarz"), new("Projekty i cele", "target", "Projekty"), new("Przypomnienia", "bell", "Alerty")]),
-        new("ORGANIZUJ", [new("Notatki", "notes", "Notatki"), new("Arkusze i rejestry", "table", "Rejestry")]),
-        new("ROZWIJAJ", [new("Rutyny", "repeat", "Rutyny"), new("Obszary życia", "areas", "Obszary")])
+        new("NA CO DZIEŃ", [new("Dzisiaj", "home", "Dzisiaj"), new("Zadania", "tasks", "Zadania"), new("Kalendarz", "calendar", "Kalendarz")]),
+        new("ZAPISZ I PAMIĘTAJ", [new("Notatki", "notes", "Notatki"), new("Przypomnienia", "bell", "Alerty")]),
+        new("ROZWÓJ I DANE", [new("Projekty i cele", "target", "Projekty"), new("Rutyny", "repeat", "Rutyny"), new("Arkusze i rejestry", "table", "Rejestry"), new("Obszary życia", "areas", "Obszary")])
     ];
 
     private static IEnumerable<NavItem> Navigation => NavigationGroups.SelectMany(group => group.Items);
-    private static IEnumerable<NavItem> MobileNavigation => Navigation.Where(item => item.Name is "Centrum" or "Zadania" or "Kalendarz" or "Notatki" or "Przypomnienia");
+    private static IEnumerable<NavItem> MobileNavigation => Navigation.Where(item => item.Name is "Dzisiaj" or "Zadania" or "Kalendarz" or "Notatki" or "Przypomnienia");
 
     private static readonly Dictionary<string, ViewHeading> Headings = new()
     {
-        ["Centrum"] = new("CENTRUM OPERACYJNE", "Dzień dobry, Radek", "Twój plan, wiedza i najważniejsze sygnały w jednym miejscu."),
-        ["Zadania"] = new("REALIZACJA", "Zadania i priorytety", "Każdy konkretny krok połączony z obszarem życia i kalendarzem."),
-        ["Kalendarz"] = new("CZAS", "Kalendarz", "Zobacz zobowiązania, zadania i rytm tygodnia w jednym widoku."),
-        ["Projekty i cele"] = new("KIERUNEK", "Projekty i cele", "Połącz codzienne działania z wynikami, które naprawdę chcesz osiągnąć."),
-        ["Przypomnienia"] = new("UWAGA", "Przypomnienia", "Jedna kolejka spraw, o których LifeOS ma pamiętać za Ciebie."),
-        ["Notatki"] = new("WIEDZA", "Notatki i pomysły", "Szybki zapis decyzji, obserwacji i materiałów do dalszego działania."),
-        ["Arkusze i rejestry"] = new("DANE", "Arkusze i rejestry", "Uporządkowane dane do finansów, kontaktów, nauki i własnych trackerów."),
-        ["Rutyny"] = new("SYSTEM", "Rutyny", "Powtarzalne działania, które utrzymują energię i porządek bez ciągłego planowania."),
-        ["Obszary życia"] = new("PERSPEKTYWA", "Obszary życia", "Monitoruj kierunek bez zamieniania życia w ranking punktów.")
+        ["Dzisiaj"] = new("TWÓJ DZIEŃ", "Dzień dobry, Radek", "Zacznij od jednej ważnej rzeczy. Resztę masz tutaj pod kontrolą."),
+        ["Zadania"] = new("DO ZROBIENIA", "Zadania", "Zapisuj konkretne kroki i spokojnie przechodź przez nie po kolei."),
+        ["Kalendarz"] = new("TWÓJ CZAS", "Kalendarz", "Wszystkie zobowiązania i plany tygodnia w jednym miejscu."),
+        ["Projekty i cele"] = new("DOKĄD ZMIERZASZ", "Projekty i cele", "Zobacz, jak codzienne działania przybliżają Cię do większych wyników."),
+        ["Przypomnienia"] = new("NIE ZAPOMNIJ", "Przypomnienia", "LifeOS przypilnuje spraw, których nie chcesz trzymać w głowie."),
+        ["Notatki"] = new("TWOJE MYŚLI", "Notatki", "Zapisuj pomysły, decyzje i materiały, zanim zdążą uciec."),
+        ["Arkusze i rejestry"] = new("TWOJE DANE", "Arkusze i rejestry", "Finanse, kontakty, nauka i własne zestawienia w czytelnej formie."),
+        ["Rutyny"] = new("DOBRE NAWYKI", "Rutyny", "Małe powtarzalne działania, które porządkują dzień i oszczędzają energię."),
+        ["Obszary życia"] = new("SZERSZY OBRAZ", "Obszary życia", "Sprawdź, które części życia mają się dobrze, a które potrzebują uwagi.")
     };
 
     private ViewHeading ViewCopy => Headings[_view];
@@ -275,25 +268,41 @@
     }
 
     private RenderFragment DashboardView() => @<text>
-        <section class="metrics">
-            <article><div><span>Realizacja dnia</span><strong>@Dashboard!.TaskProgress%</strong></div><em><i style="width: @(Dashboard.TaskProgress)%"></i></em><p>@Dashboard.CompletedTasks z @Dashboard.Tasks.Count zadań zakończonych</p></article>
-            <article><div><span>Otwarte zadania</span><strong>@Dashboard.OpenTasks</strong></div><b>@(Dashboard.Tasks.FirstOrDefault(task => !task.IsCompleted)?.Title ?? "Plan dnia zakończony")</b><p>Najbliższy konkretny krok</p></article>
-            <article><div><span>Rutyny</span><strong>@Dashboard.CompletedRoutines/@Dashboard.Routines.Count</strong></div><em><i class="green" style="width: @(Dashboard.Routines.Count == 0 ? 0 : Dashboard.CompletedRoutines * 100 / Dashboard.Routines.Count)%"></i></em><p>Regularność stabilizuje system</p></article>
-            <article><div><span>Balans obszarów</span><strong>@Dashboard.Balance</strong></div><em><i class="violet" style="width: @(Dashboard.Balance)%"></i></em><p>Średnia wszystkich obszarów życia</p></article>
-        </section>
+        <section class="day-overview">
+            <article class="focus-card">
+                @if (Dashboard!.Tasks.FirstOrDefault(task => !task.IsCompleted) is { } focusTask)
+                {
+                    <div class="focus-card-copy">
+                        <span>NAJWAŻNIEJSZE TERAZ</span>
+                        <h2>@focusTask.Title</h2>
+                        <p><i style="background: @Area(focusTask.Area).Color"></i>@Area(focusTask.Area).Name <b>·</b> około @focusTask.DurationMinutes min</p>
+                    </div>
+                    <div class="focus-progress"><strong>@Dashboard.TaskProgress%</strong><span>planu gotowe</span></div>
+                    <div class="focus-progress-bar"><i style="width: @(Dashboard.TaskProgress)%"></i></div>
+                    <footer>
+                        <button class="focus-done" type="button" @onclick="() => ToggleTaskAsync(focusTask.Id)">✓ Oznacz jako zrobione</button>
+                        <button class="focus-plan" type="button" @onclick='() => SetView("Zadania")'>Zobacz cały plan →</button>
+                    </footer>
+                }
+                else
+                {
+                    <div class="focus-empty"><span>✓</span><div><h2>Plan na dziś jest gotowy</h2><p>Możesz odpocząć albo zaplanować kolejny krok.</p></div></div>
+                    <footer><button class="focus-done" type="button" @onclick='() => OpenComposer("Zadania")'>+ Dodaj zadanie</button></footer>
+                }
+            </article>
 
-        <section class="flow-strip" aria-label="Przepływ informacji w LifeOS">
-            <div><span>@Icon("notes")</span><p><strong>Zapisz</strong><small>notatkę lub pomysł</small></p></div><i>→</i>
-            <div><span>@Icon("target")</span><p><strong>Zamień w działanie</strong><small>projekt albo zadanie</small></p></div><i>→</i>
-            <div><span>@Icon("calendar")</span><p><strong>Zaplanuj</strong><small>czas i przypomnienie</small></p></div><i>→</i>
-            <div><span>@Icon("table")</span><p><strong>Wyciągnij wnioski</strong><small>w rejestrach i danych</small></p></div>
+            <aside class="day-pulse" aria-label="Podsumowanie dnia">
+                <button type="button" @onclick='() => SetView("Zadania")'><span class="pulse-icon blue">@Icon("tasks")</span><p><strong>@Dashboard.OpenTasks</strong><small>@TaskWord(Dashboard.OpenTasks) czeka</small></p><em>→</em></button>
+                <button type="button" @onclick='() => SetView("Rutyny")'><span class="pulse-icon green">@Icon("repeat")</span><p><strong>@Dashboard.CompletedRoutines/@Dashboard.Routines.Count</strong><small>rutyn zrobionych</small></p><em>→</em></button>
+                <button type="button" @onclick='() => SetView("Przypomnienia")'><span class="pulse-icon orange">@Icon("bell")</span><p><strong>@ReminderCount</strong><small>spraw do pamiętania</small></p><em>→</em></button>
+            </aside>
         </section>
 
         <section class="dashboard-grid">
-            <article class="panel tasks-panel"><header><div><span>DZISIAJ</span><h2>Najważniejsze zadania</h2></div><button type="button" @onclick='() => SetView("Zadania")'>Zobacz cały plan</button></header><div class="task-list">@foreach (var task in Dashboard.Tasks.Take(5)) { @TaskRow(task) }</div></article>
-            <article class="panel notes-panel"><header><div><span>SZYBKI ZAPIS</span><h2>Inbox notatek</h2></div><b>@Dashboard.Notes.Count</b></header>@NoteComposer()<div class="note-preview">@if (Dashboard.Notes.Count == 0) { <p>Brak notatek. Wszystko jest uporządkowane.</p> } else { @foreach (var note in Dashboard.Notes.Take(2)) { <p>@note.Content</p> } }</div></article>
-            <article class="panel routines-panel"><header><div><span>SYSTEM DNIA</span><h2>Rutyny</h2></div><b>@Dashboard.CompletedRoutines/@Dashboard.Routines.Count</b></header><div class="routine-list">@foreach (var routine in Dashboard.Routines) { <button type="button" class="@(routine.IsCompletedToday ? "done" : "")" @onclick="() => ToggleRoutineAsync(routine.Id)"><i>@(routine.IsCompletedToday ? "✓" : "")</i><span><strong>@routine.Name</strong><small>@routine.Schedule</small></span></button> }</div></article>
-            <article class="panel areas-panel"><header><div><span>PEŁNY OBRAZ</span><h2>Obszary życia</h2></div><button type="button" @onclick='() => SetView("Obszary życia")'>Szczegóły</button></header><div class="compact-areas">@foreach (var area in Dashboard.Areas) { <button type="button" class="@(area.Key == _selectedArea ? "active" : "")" style="--area-color: @area.Color" @onclick="() => _selectedArea = area.Key"><span><i></i>@area.Name</span><em><b style="width: @(area.Score)%"></b></em><strong>@area.Score</strong></button> }</div></article>
+            <article class="panel tasks-panel"><header><div><span>PLAN NA DZIŚ</span><h2>Kolejne kroki</h2></div><button type="button" @onclick='() => SetView("Zadania")'>Wszystkie zadania →</button></header><div class="task-list">@foreach (var task in Dashboard.Tasks.Where(task => !task.IsCompleted).Take(4)) { @TaskRow(task) }</div></article>
+            <article class="panel notes-panel friendly-note"><header><div><span>SZYBKI ZAPIS</span><h2>Zapisz, zanim ucieknie</h2></div><b>@Dashboard.Notes.Count</b></header>@NoteComposer()<div class="note-preview">@if (Dashboard.Notes.Count == 0) { <p>Tu pojawią się Twoje ostatnie notatki.</p> } else { @foreach (var note in Dashboard.Notes.Take(2)) { <p>@note.Content</p> } }</div></article>
+            <article class="panel routines-panel"><header><div><span>CODZIENNY RYTM</span><h2>Rutyny</h2></div><button type="button" @onclick='() => SetView("Rutyny")'>Zobacz wszystkie →</button></header><div class="routine-list">@foreach (var routine in Dashboard.Routines) { <button type="button" class="@(routine.IsCompletedToday ? "done" : "")" @onclick="() => ToggleRoutineAsync(routine.Id)"><i>@(routine.IsCompletedToday ? "✓" : "")</i><span><strong>@routine.Name</strong><small>@routine.Schedule</small></span></button> }</div></article>
+            <article class="panel areas-panel"><header><div><span>SZERSZY OBRAZ</span><h2>Jak mają się Twoje obszary?</h2></div><button type="button" @onclick='() => SetView("Obszary życia")'>Pełny widok →</button></header><div class="compact-areas">@foreach (var area in Dashboard.Areas) { <button type="button" class="@(area.Key == _selectedArea ? "active" : "")" style="--area-color: @area.Color" @onclick="() => _selectedArea = area.Key"><span><i></i>@area.Name</span><em><b style="width: @(area.Score)%"></b></em><strong>@area.Score</strong></button> }</div></article>
         </section>
     </text>;
 
@@ -397,6 +406,8 @@
     private RenderFragment NoteComposer(bool expanded = false) => @<div class="note-composer @(expanded ? "expanded" : "")"><textarea @bind="_newNote" @bind:event="oninput" placeholder="Zapisz pomysł, decyzję lub rzecz do sprawdzenia…"></textarea><div><span>Zapis w prywatnej bazie LifeOS.</span><button type="button" @onclick="AddNoteAsync">Zapisz notatkę</button></div></div>;
 
     private LifeArea Area(AreaKey key) => Dashboard!.Areas.First(area => area.Key == key);
+
+    private static string TaskWord(int count) => count == 1 ? "zadanie" : count is >= 2 and <= 4 ? "zadania" : "zadań";
 
     private void SelectAreaTasks(AreaKey area)
     {
