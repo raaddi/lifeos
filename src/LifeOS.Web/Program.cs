@@ -25,7 +25,10 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
+app.UseStaticFiles();
 app.MapStaticAssets();
+app.MapGet("/styles/lifeos.css", (IWebHostEnvironment environment) =>
+    Results.File(Path.Combine(environment.WebRootPath, "app.css"), "text/css"));
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
