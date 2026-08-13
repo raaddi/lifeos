@@ -58,6 +58,27 @@ app.MapPatch("/api/routines/{routineId:guid}/toggle", async (Guid routineId, IWo
     await workspace.ToggleRoutineAsync(routineId, cancellationToken);
     return Results.NoContent();
 });
+app.MapPost("/api/shopping", async (CreateShoppingItemRequest request, IWorkspaceService workspace, CancellationToken cancellationToken) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Name)) return Results.BadRequest(new { error = "Name is required." });
+    await workspace.AddShoppingItemAsync(request.Name, request.Category, request.Quantity, cancellationToken);
+    return Results.NoContent();
+});
+app.MapPatch("/api/shopping/{itemId:guid}/toggle", async (Guid itemId, IWorkspaceService workspace, CancellationToken cancellationToken) =>
+{
+    await workspace.ToggleShoppingItemAsync(itemId, cancellationToken);
+    return Results.NoContent();
+});
+app.MapDelete("/api/shopping/{itemId:guid}", async (Guid itemId, IWorkspaceService workspace, CancellationToken cancellationToken) =>
+{
+    await workspace.RemoveShoppingItemAsync(itemId, cancellationToken);
+    return Results.NoContent();
+});
+app.MapDelete("/api/shopping/purchased", async (IWorkspaceService workspace, CancellationToken cancellationToken) =>
+{
+    await workspace.ClearPurchasedShoppingItemsAsync(cancellationToken);
+    return Results.NoContent();
+});
 
 await app.Services.InitializeLifeOsAsync();
 
@@ -65,3 +86,4 @@ app.Run();
 
 public sealed record CreateTaskRequest(string Title, AreaKey Area, int DurationMinutes = 30);
 public sealed record CreateNoteRequest(string Content);
+public sealed record CreateShoppingItemRequest(string Name, ShoppingCategory Category, string Quantity = "1 szt.");

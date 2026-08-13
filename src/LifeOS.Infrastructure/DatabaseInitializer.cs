@@ -13,6 +13,20 @@ public static class DatabaseInitializer
         await using var database = await factory.CreateDbContextAsync(cancellationToken);
         await database.Database.EnsureCreatedAsync(cancellationToken);
 
+        await database.Database.ExecuteSqlRawAsync(
+            """
+            CREATE TABLE IF NOT EXISTS "ShoppingItems" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_ShoppingItems" PRIMARY KEY,
+                "Name" TEXT NOT NULL,
+                "Quantity" TEXT NOT NULL,
+                "Category" TEXT NOT NULL,
+                "IsPurchased" INTEGER NOT NULL,
+                "CreatedAt" TEXT NOT NULL,
+                "PurchasedAt" TEXT NULL
+            );
+            """,
+            cancellationToken);
+
         if (await database.Tasks.AnyAsync(cancellationToken)) return;
 
         database.Tasks.AddRange(

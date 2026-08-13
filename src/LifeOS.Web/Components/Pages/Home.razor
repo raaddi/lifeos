@@ -5,7 +5,7 @@
 
 <HeadContent>
     <meta property="og:title" content="LifeOS — osobisty system zarządzania" />
-    <meta property="og:description" content="Zadania, notatki, rutyny i obszary życia w jednym biznesowym panelu." />
+    <meta property="og:description" content="Zadania, notatki, zakupy, rutyny i obszary życia w jednym biznesowym panelu." />
 </HeadContent>
 
 <div class="@ShellClass">
@@ -33,6 +33,7 @@
                 <div class="quick-create-menu">
                     <button type="button" @onclick='() => OpenComposer("Zadania")'><span>@Icon("tasks")</span><div><strong>Nowe zadanie</strong><small>Trafi do planu i kalendarza</small></div></button>
                     <button type="button" @onclick='() => OpenComposer("Notatki")'><span>@Icon("notes")</span><div><strong>Nowa notatka</strong><small>Zapisz pomysł lub decyzję</small></div></button>
+                    <button type="button" @onclick='() => OpenComposer("Lista zakupów")'><span>@Icon("shopping")</span><div><strong>Dodaj zakup</strong><small>Dopisz produkt do wspólnej listy</small></div></button>
                     <button type="button" @onclick='() => SetView("Przypomnienia")'><span>@Icon("bell")</span><div><strong>Przypomnienie</strong><small>Nie pozwól sprawie zniknąć</small></div></button>
                 </div>
             }
@@ -56,6 +57,10 @@
                             {
                                 <b class="alert-badge">@ReminderCount</b>
                             }
+                            else if (item.Name == "Lista zakupów" && Dashboard is not null && Dashboard.OpenShoppingItems > 0)
+                            {
+                                <b class="shopping-badge">@Dashboard.OpenShoppingItems</b>
+                            }
                         </button>
                     }
                 </section>
@@ -71,7 +76,7 @@
             <button class="mobile-menu-trigger" type="button" aria-label="Otwórz menu" @onclick="OpenMobileMenu"><span></span><span></span><span></span></button>
             <label class="search-box">
                 <span>⌕</span>
-                <input value="@_search" @oninput="SearchChanged" placeholder="Znajdź zadanie, notatkę lub projekt…" />
+                <input value="@_search" @oninput="SearchChanged" placeholder="Znajdź zadanie, notatkę, zakup lub projekt…" />
                 <kbd>Ctrl K</kbd>
             </label>
             <div class="top-actions">
@@ -127,6 +132,9 @@
                     case "Notatki":
                         @NotesView()
                         break;
+                    case "Lista zakupów":
+                        @ShoppingListView()
+                        break;
                     case "Arkusze i rejestry":
                         @SheetsView()
                         break;
@@ -157,10 +165,14 @@
     private string _view = "Dzisiaj";
     private string _newTask = string.Empty;
     private string _newNote = string.Empty;
+    private string _newShoppingItem = string.Empty;
+    private string _shoppingQuantity = "1 szt.";
     private string _search = string.Empty;
     private string _formulaChapter = "Dieta";
     private double _referenceLoadKg = 100;
     private AreaKey _selectedArea = AreaKey.Business;
+    private ShoppingCategory _shoppingCategory = ShoppingCategory.Food;
+    private ShoppingCategory? _shoppingFilter;
     private int _duration = 30;
     private bool _menuCollapsed;
     private bool _mobileMenuOpen;
@@ -168,7 +180,7 @@
 
     private static readonly NavGroup[] NavigationGroups =
     [
-        new("NA CO DZIEŃ", [new("Dzisiaj", "home", "Dzisiaj"), new("Zadania", "tasks", "Zadania"), new("Kalendarz", "calendar", "Kalendarz")]),
+        new("NA CO DZIEŃ", [new("Dzisiaj", "home", "Dzisiaj"), new("Zadania", "tasks", "Zadania"), new("Kalendarz", "calendar", "Kalendarz"), new("Lista zakupów", "shopping", "Zakupy")]),
         new("ZAPISZ I PAMIĘTAJ", [new("Notatki", "notes", "Notatki"), new("Przypomnienia", "bell", "Alerty")]),
         new("ROZWÓJ I DANE", [new("Projekty i cele", "target", "Projekty"), new("Rutyny", "repeat", "Rutyny"), new("Arkusze i rejestry", "table", "Rejestry"), new("Obszary życia", "areas", "Obszary")]),
         new("WIEDZA", [new("Formula", "formula", "Formula")])
@@ -185,6 +197,7 @@
         ["Projekty i cele"] = new("DOKĄD ZMIERZASZ", "Projekty i cele", "Zobacz, jak codzienne działania przybliżają Cię do większych wyników."),
         ["Przypomnienia"] = new("NIE ZAPOMNIJ", "Przypomnienia", "LifeOS przypilnuje spraw, których nie chcesz trzymać w głowie."),
         ["Notatki"] = new("TWOJE MYŚLI", "Notatki", "Zapisuj pomysły, decyzje i materiały, zanim zdążą uciec."),
+        ["Lista zakupów"] = new("KUP TYLKO TO, CZEGO POTRZEBUJESZ", "Lista zakupów", "Jedna uporządkowana lista na jedzenie, dom, higienę i suplementację."),
         ["Arkusze i rejestry"] = new("TWOJE DANE", "Arkusze i rejestry", "Finanse, kontakty, nauka i własne zestawienia w czytelnej formie."),
         ["Rutyny"] = new("DOBRE NAWYKI", "Rutyny", "Małe powtarzalne działania, które porządkują dzień i oszczędzają energię."),
         ["Obszary życia"] = new("SZERSZY OBRAZ", "Obszary życia", "Sprawdź, które części życia mają się dobrze, a które potrzebują uwagi."),
@@ -227,6 +240,7 @@
     {
         SetView(view);
         if (view == "Notatki") _newNote = string.Empty;
+        if (view == "Lista zakupów") _newShoppingItem = string.Empty;
     }
 
     private string NavClass(string name) => _view == name ? "active" : string.Empty;
@@ -261,6 +275,39 @@
         await ReloadAsync();
     }
 
+    private async Task AddShoppingItemAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newShoppingItem)) return;
+        await Workspace.AddShoppingItemAsync(_newShoppingItem, _shoppingCategory, _shoppingQuantity);
+        _newShoppingItem = string.Empty;
+        _shoppingQuantity = "1 szt.";
+        await ReloadAsync();
+    }
+
+    private async Task ShoppingKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter") await AddShoppingItemAsync();
+    }
+
+    private async Task ToggleShoppingItemAsync(Guid id)
+    {
+        await Workspace.ToggleShoppingItemAsync(id);
+        await ReloadAsync();
+    }
+
+    private async Task RemoveShoppingItemAsync(Guid id)
+    {
+        await Workspace.RemoveShoppingItemAsync(id);
+        await ReloadAsync();
+    }
+
+    private async Task ClearPurchasedShoppingItemsAsync()
+    {
+        if (Dashboard?.PurchasedShoppingItems is not > 0) return;
+        await Workspace.ClearPurchasedShoppingItemsAsync();
+        await ReloadAsync();
+    }
+
     private IReadOnlyList<SearchResult> BuildSearchResults()
     {
         if (Dashboard is null || string.IsNullOrWhiteSpace(_search)) return [];
@@ -270,6 +317,9 @@
             .Concat(Dashboard.Notes
                 .Where(note => note.Content.Contains(_search, StringComparison.CurrentCultureIgnoreCase))
                 .Select(note => new SearchResult("Notatka", note.Content)))
+            .Concat(Dashboard.ShoppingItems
+                .Where(item => item.Name.Contains(_search, StringComparison.CurrentCultureIgnoreCase))
+                .Select(item => new SearchResult("Zakupy", $"{item.Name} · {item.Quantity}")))
             .Take(10)
             .ToArray();
     }
@@ -372,6 +422,68 @@
     private RenderFragment NotesView() => @<section class="notes-view">
         @NoteComposer(true)
         <div class="note-grid">@if (Dashboard!.Notes.Count == 0) { <div class="empty-state"><strong>Inbox jest pusty</strong><p>Pierwsza notatka pojawi się tutaj.</p></div> } else { @foreach (var note in Dashboard.Notes) { <article><span>@note.CreatedAt.ToLocalTime().ToString("d MMM, HH:mm", CultureInfo.GetCultureInfo("pl-PL"))</span><p>@note.Content</p></article> } }</div>
+    </section>;
+
+    private RenderFragment ShoppingListView() => @<section class="shopping-view">
+        <div class="shopping-command">
+            <div class="shopping-input-wrap">
+                <span class="shopping-input-icon">@Icon("shopping")</span>
+                <label><span>NOWA POZYCJA</span><input @bind="_newShoppingItem" @bind:event="oninput" @onkeydown="ShoppingKeyDown" placeholder="Np. płatki owsiane, magnez, płyn do naczyń…" autofocus /></label>
+            </div>
+            <label class="shopping-field"><span>ILOŚĆ</span><input @bind="_shoppingQuantity" @bind:event="oninput" @onkeydown="ShoppingKeyDown" placeholder="1 szt." /></label>
+            <label class="shopping-field"><span>KATEGORIA</span><select @bind="_shoppingCategory">@foreach (var category in ShoppingCategories) { <option value="@category">@ShoppingCategoryName(category)</option> }</select></label>
+            <button type="button" @onclick="AddShoppingItemAsync">+ Dodaj do listy</button>
+        </div>
+
+        <div class="shopping-toolbar">
+            <div class="shopping-progress-copy">
+                <span>@Dashboard!.OpenShoppingItems do kupienia</span>
+                <div><i style="width:@ShoppingProgress%"></i></div>
+                <small>@Dashboard.PurchasedShoppingItems z @Dashboard.ShoppingItems.Count kupionych</small>
+            </div>
+            <div class="shopping-filters" aria-label="Filtry listy zakupów">
+                <button type="button" class="@(_shoppingFilter is null ? "active" : "")" @onclick="() => _shoppingFilter = null">Wszystko <b>@Dashboard.ShoppingItems.Count</b></button>
+                @foreach (var category in ShoppingCategories)
+                {
+                    <button type="button" class="@(_shoppingFilter == category ? "active" : "")" @onclick="() => _shoppingFilter = category"><i style="background:@ShoppingCategoryColor(category)"></i>@ShoppingCategoryName(category)<b>@ShoppingCategoryCount(category)</b></button>
+                }
+            </div>
+        </div>
+
+        @if (FilteredShoppingItems.Count == 0)
+        {
+            <div class="shopping-empty">
+                <span>@Icon("shopping")</span>
+                <strong>@(Dashboard.ShoppingItems.Count == 0 ? "Lista jest pusta" : "W tej kategorii nic nie ma")</strong>
+                <p>@(Dashboard.ShoppingItems.Count == 0 ? "Dodaj pierwszy produkt powyżej. Lista zapisze się automatycznie." : "Wybierz inny filtr albo dopisz nową pozycję.")</p>
+            </div>
+        }
+        else
+        {
+            <div class="shopping-groups">
+                @foreach (var group in FilteredShoppingItems.GroupBy(item => item.Category).OrderBy(group => Array.IndexOf(ShoppingCategories, group.Key)))
+                {
+                    <section class="shopping-group">
+                        <header><div><span style="--category-color:@ShoppingCategoryColor(group.Key)">@ShoppingCategorySymbol(group.Key)</span><div><strong>@ShoppingCategoryName(group.Key)</strong><small>@group.Count(item => !item.IsPurchased) pozostało</small></div></div><b>@group.Count()</b></header>
+                        <div class="shopping-items">
+                            @foreach (var item in group.OrderBy(item => item.IsPurchased).ThenBy(item => item.CreatedAt))
+                            {
+                                <article class="@(item.IsPurchased ? "purchased" : "")">
+                                    <button class="shopping-check" type="button" aria-label="@ShoppingToggleLabel(item)" @onclick="() => ToggleShoppingItemAsync(item.Id)"><i>@(item.IsPurchased ? "✓" : "")</i></button>
+                                    <button class="shopping-name" type="button" @onclick="() => ToggleShoppingItemAsync(item.Id)"><strong>@item.Name</strong><span>@item.Quantity</span></button>
+                                    <button class="shopping-remove" type="button" aria-label="Usuń @item.Name" title="Usuń" @onclick="() => RemoveShoppingItemAsync(item.Id)">×</button>
+                                </article>
+                            }
+                        </div>
+                    </section>
+                }
+            </div>
+        }
+
+        @if (Dashboard.PurchasedShoppingItems > 0)
+        {
+            <footer class="shopping-footer"><span>Kupione pozycje zostają na liście, dopóki ich nie wyczyścisz.</span><button type="button" @onclick="ClearPurchasedShoppingItemsAsync">Wyczyść kupione (@Dashboard.PurchasedShoppingItems)</button></footer>
+        }
     </section>;
 
     private RenderFragment SheetsView() => @<text>
@@ -719,6 +831,58 @@
 
     private static string FormatKg(double value) => $"{value:0.#} kg";
 
+    private static readonly ShoppingCategory[] ShoppingCategories =
+    [
+        ShoppingCategory.Food,
+        ShoppingCategory.HouseholdChemicals,
+        ShoppingCategory.Supplements,
+        ShoppingCategory.Home,
+        ShoppingCategory.Hygiene,
+        ShoppingCategory.Other
+    ];
+
+    private IReadOnlyList<ShoppingItem> FilteredShoppingItems => Dashboard!.ShoppingItems
+        .Where(item => _shoppingFilter is null || item.Category == _shoppingFilter)
+        .ToArray();
+
+    private int ShoppingProgress => Dashboard!.ShoppingItems.Count == 0
+        ? 0
+        : (int)Math.Round(Dashboard.PurchasedShoppingItems * 100d / Dashboard.ShoppingItems.Count);
+
+    private int ShoppingCategoryCount(ShoppingCategory category) => Dashboard!.ShoppingItems.Count(item => item.Category == category);
+
+    private static string ShoppingToggleLabel(ShoppingItem item) => $"{(item.IsPurchased ? "Przywróć" : "Oznacz jako kupione")} {item.Name}";
+
+    private static string ShoppingCategoryName(ShoppingCategory category) => category switch
+    {
+        ShoppingCategory.Food => "Jedzenie",
+        ShoppingCategory.HouseholdChemicals => "Chemia",
+        ShoppingCategory.Supplements => "Suplementy",
+        ShoppingCategory.Home => "Dom",
+        ShoppingCategory.Hygiene => "Higiena",
+        _ => "Inne"
+    };
+
+    private static string ShoppingCategorySymbol(ShoppingCategory category) => category switch
+    {
+        ShoppingCategory.Food => "J",
+        ShoppingCategory.HouseholdChemicals => "C",
+        ShoppingCategory.Supplements => "S",
+        ShoppingCategory.Home => "D",
+        ShoppingCategory.Hygiene => "H",
+        _ => "+"
+    };
+
+    private static string ShoppingCategoryColor(ShoppingCategory category) => category switch
+    {
+        ShoppingCategory.Food => "#70a98c",
+        ShoppingCategory.HouseholdChemicals => "#6f96c5",
+        ShoppingCategory.Supplements => "#b18a61",
+        ShoppingCategory.Home => "#a67573",
+        ShoppingCategory.Hygiene => "#8a78b5",
+        _ => "#7d8794"
+    };
+
     private void SelectAreaTasks(AreaKey area)
     {
         _selectedArea = area;
@@ -739,6 +903,7 @@
         "wallet" => "¤",
         "contacts" => "♙",
         "learning" => "◇",
+        "shopping" => "▱",
         "formula" => "ƒ",
         _ => "·"
     };

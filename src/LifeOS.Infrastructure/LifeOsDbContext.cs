@@ -8,6 +8,7 @@ public sealed class LifeOsDbContext(DbContextOptions<LifeOsDbContext> options) :
     public DbSet<LifeTask> Tasks => Set<LifeTask>();
     public DbSet<Routine> Routines => Set<Routine>();
     public DbSet<Note> Notes => Set<Note>();
+    public DbSet<ShoppingItem> ShoppingItems => Set<ShoppingItem>();
     public DbSet<LifeArea> Areas => Set<LifeArea>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -30,6 +31,14 @@ public sealed class LifeOsDbContext(DbContextOptions<LifeOsDbContext> options) :
         {
             entity.HasKey(note => note.Id);
             entity.Property(note => note.Content).HasMaxLength(4000);
+        });
+
+        modelBuilder.Entity<ShoppingItem>(entity =>
+        {
+            entity.HasKey(item => item.Id);
+            entity.Property(item => item.Name).HasMaxLength(240);
+            entity.Property(item => item.Quantity).HasMaxLength(80);
+            entity.Property(item => item.Category).HasConversion<string>().HasMaxLength(40);
         });
 
         modelBuilder.Entity<LifeArea>(entity =>
