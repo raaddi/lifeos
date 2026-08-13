@@ -201,7 +201,7 @@
         ["Arkusze i rejestry"] = new("TWOJE DANE", "Arkusze i rejestry", "Finanse, kontakty, nauka i własne zestawienia w czytelnej formie."),
         ["Rutyny"] = new("DOBRE NAWYKI", "Rutyny", "Małe powtarzalne działania, które porządkują dzień i oszczędzają energię."),
         ["Obszary życia"] = new("SZERSZY OBRAZ", "Obszary życia", "Sprawdź, które części życia mają się dobrze, a które potrzebują uwagi."),
-        ["Formula"] = new("BIBLIOTEKA SYSTEMU", "Formula", "Nauka o tym, jak ciało i umysł zamieniają codzienne decyzje w wynik.")
+        ["Formula"] = new("BIBLIOTEKA SYSTEMU", "Formula", "Instrukcja obsługi człowieka: jak codzienne wybory po cichu budują albo odbierają Twoją siłę.")
     };
 
     private ViewHeading ViewCopy => Headings[_view];
@@ -528,7 +528,7 @@
             <div class="formula-library-title"><span>FORMULA / INDEX</span><strong>Rozdziały</strong></div>
             <button class="@(_formulaChapter == "Dieta" ? "active" : "")" type="button" @onclick='() => _formulaChapter = "Dieta"'><span>01</span><div><strong>Dieta</strong><small>Odżywianie i adaptacja</small></div><em>12 min</em></button>
             <button class="@(_formulaChapter == "Sen" ? "active" : "")" type="button" @onclick='() => _formulaChapter = "Sen"'><span>02</span><div><strong>Sen</strong><small>Regeneracja i pamięć</small></div><em>16 min</em></button>
-            <div class="formula-principle"><span>ZASADA FORMULA</span><p>Najpierw zrozum mechanizm. Potem zaprojektuj system, który działa również w słabszy dzień.</p></div>
+            <div class="formula-principle"><span>ZASADA FORMULA</span><p>Nie zmieniasz życia jednym idealnym dniem. Zmieniasz je dniem wystarczająco dobrym, powtórzonym setki razy.</p></div>
         </aside>
 
         @if (_formulaChapter == "Dieta")
@@ -538,7 +538,7 @@
                 <div class="formula-code"><span>FORMULA</span><i></i><span>01</span></div>
                 <p class="formula-kicker">FUNDAMENTY WYDAJNOŚCI</p>
                 <h2>Dieta</h2>
-                <p class="formula-lead">Trening daje organizmowi sygnał do zmiany. Dieta dostarcza energii, budulca i warunków, dzięki którym ten sygnał może zostać zamieniony w adaptację.</p>
+                <p class="formula-lead">Każdy trening jest obietnicą złożoną przyszłemu sobie. Dieta decyduje, czy organizm będzie miał z czego tej obietnicy dotrzymać.</p>
                 <div class="formula-meta"><span>Poziom: fundament</span><span>Czas: 12 min</span><span>Aktualizacja: 2026</span></div>
             </header>
 
@@ -553,9 +553,15 @@
 
                 <div class="article-body">
                     <section class="article-intro">
-                        <p>Wyobraź sobie dwie osoby wykonujące ten sam plan. Obie trenują ciężko, śpią podobną liczbę godzin i mają zbliżone predyspozycje. Pierwsza je przypadkowo: raz za mało, raz bardzo dużo, większość kalorii czerpie z produktów wysokoprzetworzonych. Druga pokrywa zapotrzebowanie energetyczne, rozkłada białko w ciągu dnia, dopasowuje węglowodany do wysiłku i regularnie je warzywa, owoce, pełne ziarna, strączki oraz wartościowe tłuszcze.</p>
-                        <p>Na pojedynczym treningu różnica może być ledwie widoczna. Po kilku miesiącach kumuluje się jednak w jakości kolejnych sesji, szybkości odbudowy zapasów, utrzymaniu masy mięśniowej, odporności i ryzyku przerw w treningu.</p>
+                        <p>Wyobraź sobie dwie osoby wykonujące ten sam plan. Obie trenują ciężko, mają podobne predyspozycje i przez wiele tygodni widzą na sztandze niemal te same liczby. Pierwsza je przypadkowo. Druga każdego dnia dostarcza organizmowi energii, białka, warzyw, owoców i wartościowych tłuszczów.</p>
+                        <p>Za rok obie powiedzą: „trenowałem równie ciężko”. Ich ciała mogą jednak opowiedzieć dwie zupełnie różne historie — o regeneracji, zdrowiu, liczbie opuszczonych treningów i sile, którą udało się naprawdę zachować.</p>
                     </section>
+
+                    <div class="formula-impact">
+                        <span>365 DNI PÓŹNIEJ</span>
+                        <strong>Ciało pamięta to, co robisz regularnie — nie to, co obiecywałeś sobie robić.</strong>
+                        <p>Pojedynczy posiłek rzadko zmienia wynik. Setki posiłków tworzą środowisko, w którym Twój wysiłek albo zamienia się w adaptację, albo stale walczy o samo odrobienie strat.</p>
+                    </div>
 
                     <section id="formula-experiment" class="article-section">
                         <span class="section-number">01 / MODEL</span>
@@ -652,7 +658,7 @@
             <div class="formula-code"><span>FORMULA</span><i></i><span>02 / SLEEP</span></div>
             <p class="formula-kicker">RAPORT SYSTEMOWY</p>
             <h2>Sen</h2>
-            <p class="formula-lead">Jak długość snu zmienia uwagę, naukę, nastrój, pomysłowość i gotowość treningową — bez magicznych procentów i uproszczeń.</p>
+            <p class="formula-lead">Sen jest miejscem, w którym dzisiejszy wysiłek staje się jutrzejszą sprawnością. Skracając go, nie zyskujesz czasu za darmo — pożyczasz go od uwagi, nastroju, pamięci i treningu.</p>
             <div class="formula-meta"><span>Poziom: fundament</span><span>Format: raport + modele</span><span>Przegląd: 2026</span></div>
         </header>
 
@@ -671,8 +677,14 @@
                 <section id="sleep-brief" class="sleep-executive">
                     <div class="report-heading">
                         <span>EXECUTIVE SUMMARY</span>
-                        <h3>Sen nie daje bonusu. Przywraca zdolność do wykorzystania tego, co już wypracowałeś.</h3>
-                        <p>Najpierw pogarsza się stabilność: częściej zdarza się słaba reakcja, nieudana seria, gorsza decyzja lub dzień bez pomysłu. Średnia może wyglądać jeszcze „normalnie”, ale rośnie liczba kosztownych odchyleń.</p>
+                        <h3>Możesz przestać zauważać zmęczenie. Deficyt nadal może odbierać Ci najlepszą wersję zwykłego dnia.</h3>
+                        <p>Najpierw znika margines bezpieczeństwa: częściej zdarza się słaba reakcja, nieudana seria, niepotrzebny konflikt, gorsza decyzja lub dzień bez pomysłu. Nie zawsze czujesz dramatyczną zmianę. Po prostu coraz rzadziej wszystko działa tak dobrze, jak mogłoby.</p>
+                    </div>
+
+                    <div class="formula-impact sleep-impact">
+                        <span>CENA, KTÓREJ NIE WIDAĆ RANO</span>
+                        <strong>Krótka noc zabiera nie tylko energię. Zabiera cierpliwość, dobry pomysł, precyzję ruchu i część wspomnień, które miały zostać z Tobą.</strong>
+                        <p>Najbardziej podstępny koszt niedosypiania polega na tym, że z czasem zmęczona wersja Ciebie zaczyna wydawać się normalna.</p>
                     </div>
 
                     <div class="sleep-stat-grid">
