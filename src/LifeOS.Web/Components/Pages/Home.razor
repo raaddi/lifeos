@@ -159,6 +159,7 @@
     private string _newNote = string.Empty;
     private string _search = string.Empty;
     private string _formulaChapter = "Dieta";
+    private double _referenceLoadKg = 100;
     private AreaKey _selectedArea = AreaKey.Business;
     private int _duration = 30;
     private bool _menuCollapsed;
@@ -534,166 +535,173 @@
         }
     </section>;
 
-    private RenderFragment SleepFormulaArticle() => @<article class="formula-article sleep-formula">
-        <header class="formula-hero sleep-hero">
-            <div class="formula-code"><span>FORMULA</span><i></i><span>02</span></div>
-            <p class="formula-kicker">REGENERACJA SYSTEMU</p>
+    private RenderFragment SleepFormulaArticle() => @<article class="formula-article sleep-formula sleep-report-shell">
+        <header class="formula-hero sleep-hero sleep-report-hero">
+            <div class="formula-code"><span>FORMULA</span><i></i><span>02 / SLEEP</span></div>
+            <p class="formula-kicker">RAPORT SYSTEMOWY</p>
             <h2>Sen</h2>
-            <p class="formula-lead">Sen nie jest przerwą od produktywności. Jest procesem serwisowym mózgu i ciała — a jego brak kumuluje się szybciej, niż subiektywnie potrafimy zauważyć.</p>
-            <div class="formula-meta"><span>Poziom: fundament</span><span>Czas: 16 min</span><span>Aktualizacja: 2026</span></div>
+            <p class="formula-lead">Jak długość snu zmienia uwagę, naukę, nastrój, pomysłowość i gotowość treningową — bez magicznych procentów i uproszczeń.</p>
+            <div class="formula-meta"><span>Poziom: fundament</span><span>Format: raport + modele</span><span>Przegląd: 2026</span></div>
         </header>
 
-        <div class="formula-reading">
-            <nav class="article-toc" aria-label="Spis treści artykułu o śnie">
-                <span>W TYM ROZDZIALE</span>
-                <a href="#sleep-engine">01. Dwa regulatory snu</a>
-                <a href="#sleep-architecture">02. Architektura nocy</a>
-                <a href="#sleep-debt">03. Jak rośnie deficyt</a>
-                <a href="#sleep-doses">04. Sen 6 / 7 / 8 / 9 h</a>
-                <a href="#sleep-systems">05. Koszt dla organizmu</a>
-                <a href="#sleep-recovery">06. Odbudowa i system</a>
+        <div class="formula-reading sleep-reading">
+            <nav class="article-toc" aria-label="Spis treści raportu o śnie">
+                <span>NAWIGACJA</span>
+                <a href="#sleep-brief">00. W skrócie</a>
+                <a href="#sleep-engine">01. Mechanizm</a>
+                <a href="#sleep-debt">02. Dług w 14 dni</a>
+                <a href="#sleep-capacity">03. Umysł i nastrój</a>
+                <a href="#sleep-training">04. Trening i kilogramy</a>
+                <a href="#sleep-recovery">05. Protokół</a>
             </nav>
 
-            <div class="article-body">
-                <section class="article-intro">
-                    <p>Jedna krótka noc zwykle nie niszczy zdrowia ani formy. Problem zaczyna się wtedy, gdy „trochę za mało” staje się ustawieniem domyślnym. Koszt nie musi być dramatyczny pierwszego dnia. Każdego kolejnego dnia zmniejsza się jednak margines błędu: trudniej utrzymać uwagę, regulować emocje, podejmować decyzje i wykorzystać trening.</p>
-                    <p>Najbardziej zdradliwy element jest prosty: poczucie przyzwyczajenia nie oznacza odzyskania sprawności. Możesz przestać czuć gwałtowną senność, a jednocześnie nadal popełniać więcej błędów i reagować wolniej.</p>
+            <div class="article-body sleep-report">
+                <section id="sleep-brief" class="sleep-executive">
+                    <div class="report-heading">
+                        <span>EXECUTIVE SUMMARY</span>
+                        <h3>Sen nie daje bonusu. Przywraca zdolność do wykorzystania tego, co już wypracowałeś.</h3>
+                        <p>Najpierw pogarsza się stabilność: częściej zdarza się słaba reakcja, nieudana seria, gorsza decyzja lub dzień bez pomysłu. Średnia może wyglądać jeszcze „normalnie”, ale rośnie liczba kosztownych odchyleń.</p>
+                    </div>
+
+                    <div class="sleep-stat-grid">
+                        <article><span>6 H × 14 NOCY</span><strong>≈ 1 doba</strong><p>Deficyty części miar uwagi i pamięci roboczej zbliżyły się do poziomu po jednej dobie bez snu.</p></article>
+                        <article><span>OSTRA UTRATA SNU</span><strong>−7,56%</strong><p>Średnia zmiana sprawności fizycznej w metaanalizie; wyniki były bardzo zróżnicowane.</p></article>
+                        <article><span>NAUKA PO NOCY BEZ SNU</span><strong>−40%</strong><p>Gorsze tworzenie nowych wspomnień w konkretnym eksperymencie — nie prognoza dla każdej krótkiej nocy.</p></article>
+                        <article><span>WGLĄD PO ŚNIE</span><strong>59% vs 23%</strong><p>Uczestnicy częściej odkrywali ukrytą regułę zadania po śnie niż po okresie czuwania.</p></article>
+                    </div>
+
+                    <div class="evidence-key"><span><i class="measured"></i><b>liczba z badania</b></span><span><i class="modelled"></i><b>model poglądowy</b></span><p>„Szczęście” oznacza niżej krótkoterminowy pozytywny nastrój i regulację emocji — nie pełny dobrostan życiowy.</p></div>
                 </section>
 
-                <section id="sleep-engine" class="article-section">
-                    <span class="section-number">01 / SILNIK</span>
-                    <h3>Sen powstaje z przecięcia dwóch niezależnych sygnałów</h3>
-                    <p>Organizm nie ma jednego przełącznika „zmęczony / wypoczęty”. Gotowość do snu jest wynikiem co najmniej dwóch procesów. Jeden mierzy czas czuwania, drugi pilnuje pory biologicznej. Możesz dlatego być wyczerpany po nieprzespanej nocy, a mimo to wieczorem dostać chwilowy „drugi wiatr”.</p>
+                <section id="sleep-engine" class="article-section sleep-report-section">
+                    <span class="section-number">01 / MECHANIZM</span>
+                    <h3>Dwa regulatory decydują, czy organizm jest gotowy do działania</h3>
+                    <p>Presja snu rośnie z każdą godziną czuwania. Rytm dobowy niezależnie ustawia pory większej czujności i senności. Kofeina może przyciszyć odczucie presji, ale nie wykonuje pracy regeneracyjnej.</p>
 
-                    <div class="sleep-engine-map">
-                        <article><span>S</span><div><strong>Presja homeostatyczna</strong><small>ILE CZUWASZ</small><p>Rośnie podczas czuwania i opada podczas snu. Im krócej śpisz, tym mniej tej presji zostaje rozładowane przed następnym dniem.</p></div></article>
-                        <i>×</i>
-                        <article><span>C</span><div><strong>Rytm dobowy</strong><small>KIEDY CZUWASZ</small><p>Zegar biologiczny ustawia okna senności i czujności. Światło, regularność oraz pora wstawania przesuwają jego fazę.</p></div></article>
-                        <i>=</i>
-                        <article class="sleep-output"><span>W</span><div><strong>Stan wykonawczy</strong><small>JAK DZIAŁASZ</small><p>To wynik presji snu, sygnału dobowego, jakości poprzedniej nocy i aktualnego obciążenia.</p></div></article>
+                    <div class="mechanism-flow">
+                        <article><span>S</span><div><small>PROCES HOMEOSTATYCZNY</small><strong>Presja snu</strong><p>narasta podczas czuwania</p></div></article>
+                        <b>+</b>
+                        <article><span>C</span><div><small>RYTM DOBOWY</small><strong>Sygnał czasu</strong><p>ustawia okna czujności</p></div></article>
+                        <b>→</b>
+                        <article class="flow-output"><span>W</span><div><small>WYNIK</small><strong>Stan wykonawczy</strong><p>uwaga · nastrój · ruch</p></div></article>
                     </div>
 
-                    <div class="formula-equation"><span>MODEL DWUPROCESOWY</span><strong>gotowość = rytm dobowy − narastająca presja snu</strong><p>Kofeina może czasowo osłabić odczucie presji. Nie wykonuje jednak biologicznej pracy snu i nie zeruje deficytu.</p></div>
+                    <details class="research-details">
+                        <summary><span>Rozłóż mechanizm na elementy atomowe</span><i>+</i></summary>
+                        <div class="research-detail-grid">
+                            <article><strong>NREM 3</strong><p>Sen wolnofalowy dominuje bardziej we wcześniejszej części nocy i współtworzy warunki odbudowy.</p></article>
+                            <article><strong>REM</strong><p>Okresy REM wydłużają się nad ranem; skracając koniec nocy, nie odcinasz neutralnego „ogona”.</p></article>
+                            <article><strong>Uwaga</strong><p>Jedną z najbardziej czułych zmian są pojedyncze, bardzo wolne reakcje — nawet jeśli większość prób nadal jest poprawna.</p></article>
+                            <article><strong>Samoocena</strong><p>Subiektywna senność może przestać rosnąć, kiedy obiektywne błędy nadal się kumulują.</p></article>
+                        </div>
+                    </details>
                 </section>
 
-                <section id="sleep-architecture" class="article-section">
-                    <span class="section-number">02 / ARCHITEKTURA</span>
-                    <h3>Nie kupujesz tylko godzin. Kupujesz kolejne cykle i ich funkcje</h3>
-                    <p>Noc składa się z powtarzających cykli NREM i REM. Ich proporcje zmieniają się wraz z porą: więcej snu głębokiego zwykle pojawia się wcześniej, a okresy REM wydłużają się nad ranem. Obcinając dwie ostatnie godziny, nie usuwasz neutralnego „ogona” — nieproporcjonalnie ograniczasz późne cykle.</p>
+                <section id="sleep-debt" class="article-section sleep-report-section">
+                    <span class="section-number">02 / KUMULACJA</span>
+                    <h3>Różnica między potrzebą 8 h a rzeczywistym snem rośnie liniowo. Skutki biologiczne — nie.</h3>
+                    <p>Wykres pokazuje prostą księgowość okazji do snu, nie „godziny biologicznego długu” możliwe do spłacenia jeden do jednego. Jest użyteczny, bo odsłania skalę regularnego skracania nocy.</p>
 
-                    <div class="sleep-cycle-strip">
-                        <div><span>01</span><strong>NREM 1</strong><small>przejście</small></div>
-                        <div><span>02</span><strong>NREM 2</strong><small>stabilizacja</small></div>
-                        <div><span>03</span><strong>NREM 3</strong><small>sen wolnofalowy</small></div>
-                        <div><span>04</span><strong>REM</strong><small>integracja</small></div>
-                    </div>
+                    <figure class="sleep-line-chart">
+                        <figcaption><div><span>MODEL 14 DNI</span><strong>Niewykorzystana okazja do snu</strong></div><small>założona potrzeba: 8 h / noc</small></figcaption>
+                        <svg viewBox="0 0 720 310" role="img" aria-labelledby="debt-title debt-desc">
+                            <title id="debt-title">Kumulacja różnicy snu przez czternaście dni</title>
+                            <desc id="debt-desc">Przy sześciu godzinach snu różnica rośnie do dwudziestu ośmiu godzin, przy siedmiu do czternastu, a przy ośmiu pozostaje na poziomie zero.</desc>
+                            <g class="chart-grid">
+                                <line x1="72" y1="32" x2="684" y2="32"/><line x1="72" y1="86" x2="684" y2="86"/><line x1="72" y1="140" x2="684" y2="140"/><line x1="72" y1="194" x2="684" y2="194"/><line x1="72" y1="248" x2="684" y2="248"/>
+                                <line x1="72" y1="32" x2="72" y2="248"/><line x1="247" y1="32" x2="247" y2="248"/><line x1="422" y1="32" x2="422" y2="248"/><line x1="597" y1="32" x2="597" y2="248"/><line x1="684" y1="32" x2="684" y2="248"/>
+                            </g>
+                            <g class="chart-axis"><text x="51" y="36">28 h</text><text x="51" y="90">21</text><text x="51" y="144">14</text><text x="56" y="198">7</text><text x="57" y="252">0</text><text x="67" y="281">1</text><text x="239" y="281">5</text><text x="414" y="281">9</text><text x="587" y="281">13</text><text x="675" y="281">14 dni</text></g>
+                            <polyline class="sleep-line six" points="72,233 116,217 160,202 203,186 247,171 291,156 335,140 378,125 422,109 466,94 509,78 553,63 597,48 641,32 684,32"/>
+                            <polyline class="sleep-line seven" points="72,240 116,233 160,225 203,217 247,210 291,202 335,194 378,186 422,179 466,171 509,163 553,156 597,148 641,140 684,140"/>
+                            <polyline class="sleep-line eight" points="72,248 684,248"/>
+                            <g class="chart-labels"><text class="six-label" x="630" y="24">6 h → 28 h</text><text class="seven-label" x="620" y="132">7 h → 14 h</text><text class="eight-label" x="616" y="241">8 h → 0 h</text></g>
+                        </svg>
+                        <div class="chart-foot"><span><i class="six"></i>6 h</span><span><i class="seven"></i>7 h</span><span><i class="eight"></i>8 h</span><span class="recovery-note">9 h = przestrzeń na odbudowę, nie „kredyt” na przyszłość</span></div>
+                    </figure>
 
-                    <div class="atom-grid">
-                        <article><span>UWAGA</span><strong>Selekcja sygnału</strong><p>Sprawność podtrzymywania reakcji i wykrywania rzadkich zdarzeń jest jednym z najbardziej czułych wskaźników braku snu.</p></article>
-                        <article><span>PAMIĘĆ</span><strong>Utrwalenie materiału</strong><p>Sen wspiera stabilizację tego, czego uczyłeś się w dzień, oraz łączenie nowych informacji z istniejącą wiedzą.</p></article>
-                        <article><span>EMOCJE</span><strong>Regulacja reakcji</strong><p>Niewyspany mózg ma mniej zasobów na hamowanie impulsywnej odpowiedzi i elastyczne spojrzenie na problem.</p></article>
-                        <article><span>CIAŁO</span><strong>Naprawa i równowaga</strong><p>Noc współtworzy środowisko hormonalne, metaboliczne i odpornościowe potrzebne do odbudowy.</p></article>
-                    </div>
+                    <aside class="report-callout"><span>CO POKAZAŁ EKSPERYMENT</span><p>Przy 6 godzinach możliwości snu przez 14 nocy deficyty części miar uwagi i pamięci roboczej narastały do poziomu porównywalnego z jedną pełną dobą bez snu. Badani odczuwali zmianę słabiej, niż pokazywały testy.</p></aside>
                 </section>
 
-                <section id="sleep-debt" class="article-section">
-                    <span class="section-number">03 / KUMULACJA</span>
-                    <h3>Deficyt zachowuje się jak narastający błąd systemu, nie jak zwykła senność</h3>
-                    <p>Jeżeli Twoja realna potrzeba wynosi około 8 godzin, a śpisz 6, każdej doby tworzysz około 2 godzin różnicy. Po dwóch tygodniach to ilustracyjnie 28 godzin niewykorzystanej możliwości snu. Nie oznacza to, że wystarczy potem „odespać dokładnie 28 godzin” — biologiczna odbudowa nie jest księgowością jeden do jednego.</p>
+                <section id="sleep-capacity" class="article-section sleep-report-section">
+                    <span class="section-number">03 / UMYSŁ I NASTRÓJ</span>
+                    <h3>6, 7, 8 i 9 godzin nie tworzy czterech „wersji Ciebie”. Zmieniają jednak margines działania.</h3>
+                    <p>Macierz pokazuje kierunek ryzyka oparty na całym zestawie badań, nie zmierzone procenty konkretnej osoby. Indywidualna potrzeba, jakość snu, pora i wcześniejszy deficyt mogą przesuwać wynik.</p>
 
-                    <div class="sleep-debt-model">
-                        <header><span>MODEL 14 DNI</span><small>Punkt odniesienia: indywidualna potrzeba 8 h</small></header>
-                        <div class="debt-row severe"><strong>6 h</strong><span><i style="width:100%"></i></span><b>≈ 28 h różnicy</b></div>
-                        <div class="debt-row moderate"><strong>7 h</strong><span><i style="width:50%"></i></span><b>≈ 14 h różnicy</b></div>
-                        <div class="debt-row neutral"><strong>8 h</strong><span><i style="width:3%"></i></span><b>punkt odniesienia</b></div>
-                        <div class="debt-row reserve"><strong>9 h</strong><span><i style="width:18%"></i></span><b>okno odbudowy*</b></div>
-                        <p>*Dodatkowa godzina nie tworzy „kredytu” pozwalającego później bezkarnie nie spać. Może natomiast pomagać młodym dorosłym, osobom po deficycie, chorym lub bardzo obciążonym treningowo.</p>
+                    <div class="capacity-table-wrap">
+                        <div class="capacity-table" role="table" aria-label="Wpływ długości snu na funkcje">
+                            <div class="capacity-head" role="row"><span role="columnheader">OBSZAR</span><strong role="columnheader">6 h</strong><strong role="columnheader">7 h</strong><strong role="columnheader">8 h</strong><strong role="columnheader">9 h</strong></div>
+                            <div class="capacity-row" role="row"><span role="rowheader"><b>Pozytywny nastrój</b><small>energia emocjonalna</small></span><i class="risk" title="wysokie ryzyko pogorszenia">obniżony</i><i class="caution" title="wynik zależny od osoby">zmienny</i><i class="stable">stabilna baza</i><i class="recovery">odbudowa*</i></div>
+                            <div class="capacity-row" role="row"><span role="rowheader"><b>Nauka</b><small>kodowanie + utrwalanie</small></span><i class="risk">słabszy zapis</i><i class="caution">mały bufor</i><i class="stable">pełna szansa</i><i class="recovery">regeneracja*</i></div>
+                            <div class="capacity-row" role="row"><span role="rowheader"><b>Pomysłowość</b><small>elastyczność + wgląd</small></span><i class="risk">mniej elastyczna</i><i class="caution">wrażliwa</i><i class="stable">dobra baza</i><i class="recovery">bez premii*</i></div>
+                            <div class="capacity-row" role="row"><span role="rowheader"><b>Trening</b><small>gotowość + precyzja</small></span><i class="risk">autoreguluj</i><i class="caution">sprawdź</i><i class="stable">referencja</i><i class="recovery">odbudowa*</i></div>
+                        </div>
                     </div>
+                    <p class="matrix-note">*9 godzin może pomagać przy dużej potrzebie lub wychodzeniu z deficytu. Nie oznacza automatycznie lepszego nastroju, większej kreatywności ani progresu ponad własną normę.</p>
 
-                    <aside class="science-note sleep-warning"><span>EKSPERYMENT, KTÓRY ZMIENIA PERSPEKTYWĘ</span><p>W kontrolowanym badaniu Van Dongena ograniczenie możliwości snu do 6 godzin przez 14 kolejnych nocy powodowało narastające deficyty uwagi i pamięci roboczej. Pod koniec wyniki tych miar były porównywalne z obserwowanymi po jednej pełnej dobie bez snu. Jednocześnie subiektywna ocena senności rosła znacznie słabiej niż obiektywne błędy — badani nie doszacowywali własnego pogorszenia.</p></aside>
-
-                    <div class="debt-steps">
-                        <article><span>DNI 1–2</span><strong>Koszt jest łatwy do zracjonalizowania</strong><p>Trochę więcej kofeiny, gorszy humor, pojedyncze rozproszenia. Czujesz, że nadal „dajesz radę”.</p></article>
-                        <article><span>DNI 3–7</span><strong>Błąd zaczyna się powtarzać</strong><p>Rośnie liczba mikroprzerw uwagi. Nauka wymaga większej liczby powtórek, a ten sam trening jest odczuwany jako cięższy.</p></article>
-                        <article><span>DNI 8–14</span><strong>Nowy, gorszy poziom staje się normalny</strong><p>Nie musisz czuć się proporcjonalnie gorzej. Spada jednak bufor bezpieczeństwa i jakość decyzji pod presją.</p></article>
-                    </div>
-                </section>
-
-                <section id="sleep-doses" class="article-section">
-                    <span class="section-number">04 / DAWKA</span>
-                    <h3>Co realnie oznacza codzienne 6, 7, 8 albo 9 godzin</h3>
-                    <p>To nie są cztery sztywne recepty. Potrzeba snu różni się między ludźmi, a „czas w łóżku” nie zawsze równa się czasowi snu. Porównanie pokazuje kierunek ryzyka dla zdrowego dorosłego — nie diagnozuje konkretnej osoby.</p>
-
-                    <div class="sleep-dose-grid">
-                        <article class="dose-critical">
-                            <header><strong>6 h</strong><span>STREFA DEFICYTU</span></header>
-                            <p>U większości dorosłych to chroniczne ograniczenie, nawet jeśli po kilku tygodniach wydaje się „normalne”.</p>
-                            <ul><li>uwaga pogarsza się dzień po dniu</li><li>większa zmienność reakcji i więcej błędów</li><li>mniejszy margines dla nauki i ciężkiego treningu</li><li>wyższe ryzyko problemów metabolicznych i odpornościowych</li></ul>
-                            <footer><span>14 dni przy potrzebie 8 h</span><strong>−28 h okazji do snu</strong></footer>
-                        </article>
-                        <article class="dose-caution">
-                            <header><strong>7 h</strong><span>DOLNA GRANICA</span></header>
-                            <p>Dla części dorosłych może wystarczać. Dla innych jest minimalnym funkcjonowaniem, a nie optimum.</p>
-                            <ul><li>AASM: co najmniej 7 h regularnie</li><li>jakość i regularność stają się krytyczne</li><li>7 h w łóżku może oznaczać mniej niż 7 h snu</li><li>obserwuj senność, potrzebę budzika i weekendowe odsypianie</li></ul>
-                            <footer><span>14 dni przy potrzebie 8 h</span><strong>−14 h okazji do snu</strong></footer>
-                        </article>
-                        <article class="dose-optimal">
-                            <header><strong>8 h</strong><span>MOCNY PUNKT STARTU</span></header>
-                            <p>Dla wielu dorosłych zapewnia przestrzeń na pełniejsze cykle bez robienia ze snu całego dnia.</p>
-                            <ul><li>łatwiej utrzymać stałą czujność</li><li>większy bufor na obciążenie fizyczne i poznawcze</li><li>lepszy punkt do oceny własnej potrzeby</li><li>nie naprawia złej jakości, bezdechu ani chaosu godzin</li></ul>
-                            <footer><span>najlepszy test praktyczny</span><strong>2–3 tygodnie regularności</strong></footer>
-                        </article>
-                        <article class="dose-recovery">
-                            <header><strong>9 h</strong><span>REZERWA I ODBUDOWA</span></header>
-                            <p>Może być naturalną potrzebą młodej, intensywnie trenującej osoby lub etapem wychodzenia z deficytu.</p>
-                            <ul><li>w badaniu Belenky’ego 9 h w łóżku utrzymywało wyniki bazowe</li><li>więcej miejsca na późne cykle REM</li><li>sensowne podczas choroby i dużego obciążenia</li><li>stałe 9+ h z wyczerpaniem wymaga szukania przyczyny</li></ul>
-                            <footer><span>to nie nadmiar z definicji</span><strong>potrzeba zależy od kontekstu</strong></footer>
-                        </article>
+                    <div class="mind-evidence-grid">
+                        <article><span>NASTRÓJ</span><strong>Sen chroni głównie „plus”</strong><p>W badaniu z 6 h możliwości snu spadały niektóre pozytywne stany, szczególnie uważność i ogólny pozytywny nastrój, a rosła wrogość. To nie jest kompletna miara szczęścia.</p></article>
+                        <article><span>NAUKA</span><strong>Najpierw zapis, potem konsolidacja</strong><p>Po całej nocy bez snu zdolność tworzenia nowych wspomnień była w konkretnym badaniu około 40% gorsza. Późniejszy sen pomaga utrwalać to, co udało się zapisać.</p></article>
+                        <article><span>POMYSŁOWOŚĆ</span><strong>Sen reorganizuje reprezentacje</strong><p>W zadaniu z ukrytą regułą wgląd osiągnęło 59% osób po śnie i około 23% po czuwaniu. To dowód dla konkretnego typu wglądu, nie uniwersalny mnożnik kreatywności.</p></article>
                     </div>
                 </section>
 
-                <section id="sleep-systems" class="article-section">
-                    <span class="section-number">05 / SKUTKI ATOMOWE</span>
-                    <h3>Brak snu nie uderza w jeden parametr. Obniża jakość całej sieci</h3>
+                <section id="sleep-training" class="article-section sleep-report-section">
+                    <span class="section-number">04 / TRENING I KILOGRAMY</span>
+                    <h3>Brak snu nie odejmuje automatycznie 7,56% od sztangi. Zmienia prawdopodobieństwo dobrego wykonania.</h3>
+                    <p>Metaanaliza ostrej utraty snu wykazała średnio 7,56% gorszą sprawność fizyczną, ale łączyła bardzo różne zadania, a zróżnicowanie wyników było ogromne. Nie wolno przenosić tej średniej wprost na ciężar sztangi.</p>
 
-                    <div class="system-cost-list">
-                        <article><span>01</span><div><strong>Uwaga i czas reakcji</strong><p>Rośnie zmienność. Większość reakcji może być poprawna, ale częściej pojawiają się pojedyncze, bardzo wolne odpowiedzi — niebezpieczne w samochodzie, pracy i grach wymagających precyzji.</p></div></article>
-                        <article><span>02</span><div><strong>Uczenie i pamięć</strong><p>Najpierw trudniej kodujesz materiał, później masz mniej zasobów na jego utrwalenie. Dłuższa nauka nie musi rekompensować gorszej jakości zapisu.</p></div></article>
-                        <article><span>03</span><div><strong>Decyzje i emocje</strong><p>Spada kontrola wykonawcza. Łatwiej przecenić nagrodę natychmiastową, reagować impulsywnie i interpretować neutralny problem jako bardziej obciążający.</p></div></article>
-                        <article><span>04</span><div><strong>Metabolizm</strong><p>W eksperymencie tydzień po 5 godzin snu obniżył wrażliwość insulinową u zdrowych młodych mężczyzn. Organizm gorzej zarządza tym samym paliwem mimo kontrolowanej diety i aktywności.</p></div></article>
-                        <article><span>05</span><div><strong>Odporność</strong><p>W badaniu z kontrolowaną ekspozycją na rinowirusa osoby śpiące mniej niż 7 godzin miały niemal trzykrotnie większe prawdopodobieństwo rozwinięcia przeziębienia niż śpiące co najmniej 8 godzin. To związek z konkretnego eksperymentu, nie obietnica dla każdej osoby.</p></div></article>
-                        <article><span>06</span><div><strong>Trening i regeneracja</strong><p>Brak snu pogarsza średnio wyniki fizyczne, szczególnie wraz z czasem pozostawania na jawie. Może zwiększać odczuwany wysiłek, obniżać precyzję oraz zmieniać środowisko anaboliczno-kataboliczne.</p></div></article>
+                    <div class="load-lab">
+                        <header><div><span>LOAD LAB / AUTOREGULACJA</span><strong>Ustaw planowaną serię roboczą</strong></div><output for="reference-load">@FormatKg(_referenceLoadKg)</output></header>
+                        <input id="reference-load" type="range" min="20" max="250" step="2.5" @bind="_referenceLoadKg" @bind:event="oninput" aria-label="Planowane obciążenie w kilogramach" />
+                        <div class="load-scale"><span>20 kg</span><span>250 kg</span></div>
+
+                        <div class="load-scenarios">
+                            <article class="load-risk"><span>6 h</span><div><strong>@FormatKg(_referenceLoadKg * .90)–@FormatKg(_referenceLoadKg * .95)</strong><p>Konserwatyczny zakres tylko wtedy, gdy rozgrzewka potwierdza gorszą prędkość, technikę lub RPE. Możesz zamiast ciężaru obciąć serie.</p></div></article>
+                            <article class="load-caution"><span>7 h</span><div><strong>@FormatKg(_referenceLoadKg * .95)–@FormatKg(_referenceLoadKg)</strong><p>Dolna granica. Rozgrzewka decyduje, czy realizujesz plan, czy zostawiasz większy zapas.</p></div></article>
+                            <article class="load-stable"><span>8 h</span><div><strong>@FormatKg(_referenceLoadKg)</strong><p>Punkt odniesienia — nadal pod warunkiem prawidłowej rozgrzewki, techniki i braku objawów choroby.</p></div></article>
+                            <article class="load-recovery"><span>9 h</span><div><strong>@FormatKg(_referenceLoadKg), nie więcej z automatu</strong><p>Dodatkowy sen może przywracać gotowość. Sam nie uzasadnia dokładania kilogramów ponad plan.</p></div></article>
+                        </div>
                     </div>
 
-                    <div class="article-conclusion sleep-conclusion"><span>NAJWAŻNIEJSZY MECHANIZM</span><h3>Nie tracisz wyłącznie energii. Tracisz zdolność trafnej oceny, ile energii i precyzji naprawdę Ci zostało.</h3><p>Dlatego sen jest infrastrukturą bezpieczeństwa. Chroni nie tylko najlepszy wynik, lecz przede wszystkim stabilność wyniku i margines błędu.</p></div>
+                    <aside class="report-callout load-warning"><span>DLACZEGO ŚREDNIA ≠ KALKULATOR</span><p>Mechaniczne odjęcie 7,56% dałoby tutaj <b>@FormatKg(_referenceLoadKg * .9244)</b>. To wyłącznie ilustracja średniej z wielu rodzajów wysiłku, nie przewidywany wynik Twojej serii ani 1RM. Decyzję podejmuj po rozgrzewce, RPE i jakości techniki.</p></aside>
+
+                    <details class="research-details">
+                        <summary><span>Co dokładnie może pogorszyć trening?</span><i>+</i></summary>
+                        <div class="research-detail-grid">
+                            <article><strong>Odczuwany wysiłek</strong><p>To samo zadanie może subiektywnie kosztować więcej, więc zaplanowany zapas szybciej znika.</p></article>
+                            <article><strong>Precyzja</strong><p>Zadania techniczne i wymagające decyzji są szczególnie wrażliwe na utratę uwagi.</p></article>
+                            <article><strong>Stabilność</strong><p>Nie każda seria będzie słabsza. Problemem jest większe ryzyko pojedynczego słabego wykonania.</p></article>
+                            <article><strong>Adaptacja</strong><p>Trening jest bodźcem, a sen częścią środowiska, w którym organizm ma ten bodziec wykorzystać.</p></article>
+                        </div>
+                    </details>
                 </section>
 
-                <section id="sleep-recovery" class="article-section">
-                    <span class="section-number">06 / ODBUDOWA</span>
-                    <h3>Weekend pomaga, ale nie daje licencji na pięć krótkich nocy</h3>
-                    <p>Po ograniczeniu snu pierwsza długa noc zwykle szybko zmniejsza odczuwaną senność. Pełny powrót części funkcji poznawczych może jednak wymagać kilku stabilnych nocy, a nie jednego maratonu w łóżku. W badaniu Belenky’ego trzy noce po 8 godzin nie przywróciły w pełni części wyników po wcześniejszym tygodniu restrykcji.</p>
+                <section id="sleep-recovery" class="article-section sleep-report-section">
+                    <span class="section-number">05 / PROTOKÓŁ</span>
+                    <h3>System, który jest prostszy niż optymalizacja: regularność → długość → jakość → pomiar funkcji</h3>
 
-                    <ol class="formula-protocol sleep-protocol">
-                        <li><span>01</span><div><strong>Ustal stałą godzinę pobudki</strong><p>To najsilniejsza kotwica rytmu. Przesuwaj ją możliwie mało również w dni wolne.</p></div></li>
-                        <li><span>02</span><div><strong>Daj sobie 8–9 godzin okna</strong><p>Okno w łóżku obejmuje zasypianie i krótkie przebudzenia. Testuj je przez 2–3 tygodnie, nie przez jedną noc.</p></div></li>
-                        <li><span>03</span><div><strong>Światło rano, mniej światła późno</strong><p>Jasne światło po pobudce wzmacnia sygnał dnia. Wieczorne ograniczenie intensywnego światła pomaga nie przesuwać snu.</p></div></li>
-                        <li><span>04</span><div><strong>Kofeinę traktuj jak narzędzie czasowe</strong><p>Nie używaj jej do maskowania chronicznego deficytu. Jej długi okres działania może zabierać jakość kolejnej nocy.</p></div></li>
-                        <li><span>05</span><div><strong>Mierz funkcję, nie tylko liczbę</strong><p>Obserwuj budzenie bez wielokrotnego odkładania alarmu, czujność po południu, nastrój, progres treningowy i potrzebę odsypiania.</p></div></li>
-                        <li><span>06</span><div><strong>Rozpoznaj sygnały medyczne</strong><p>Głośne chrapanie, przerwy oddechu, poranne bóle głowy lub senność mimo 8–9 godzin wymagają konsultacji — więcej czasu w łóżku nie leczy zaburzenia snu.</p></div></li>
+                    <ol class="report-protocol">
+                        <li><span>01</span><div><strong>Zakotwicz pobudkę</strong><p>Stała pora wstawania porządkuje rytm dobowy skuteczniej niż przypadkowe „kładzenie się wcześniej”.</p></div></li>
+                        <li><span>02</span><div><strong>Daj sobie 8–9 h okna</strong><p>Uwzględnij zasypianie i przebudzenia. Testuj przez 2–3 tygodnie, nie przez jedną noc.</p></div></li>
+                        <li><span>03</span><div><strong>Mierz cztery sygnały</strong><p>Budzenie, popołudniową czujność, pozytywny nastrój i jakość rozgrzewki treningowej.</p></div></li>
+                        <li><span>04</span><div><strong>Po deficycie odbudowuj seriami nocy</strong><p>Weekend może pomóc, ale część funkcji nie wraca natychmiast po jednej długiej nocy.</p></div></li>
+                        <li><span>05</span><div><strong>Nie maskuj problemu</strong><p>Głośne chrapanie, przerwy oddechu, poranne bóle głowy lub senność mimo 8–9 h wymagają konsultacji.</p></div></li>
                     </ol>
 
-                    <div class="article-conclusion"><span>WNIOSKI</span><h3>Najpierw regularność. Potem odpowiednia długość. Dopiero na końcu optymalizacja.</h3><p>Dla większości dorosłych 6 godzin to za mało, 7 godzin to dolna granica, 8 godzin jest mocnym punktem startu, a 9 godzin bywa uzasadnione dużą potrzebą lub odbudową. Prawdziwym celem nie jest rekord długości — jest nim stabilne funkcjonowanie bez długu.</p></div>
+                    <div class="article-conclusion sleep-conclusion"><span>WNIOSKI</span><h3>6 h zwykle tworzy deficyt. 7 h jest dolną granicą. 8 h to mocny punkt startu. 9 h bywa narzędziem odbudowy.</h3><p>Nie ścigaj rekordu snu. Szukaj długości, przy której uwaga, nastrój, nauka i trening pozostają stabilne bez ciągłego odsypiania.</p></div>
                 </section>
 
-                <footer class="formula-sources">
-                    <span>ŹRÓDŁA I DALSZA LEKTURA</span>
-                    <a href="https://pubmed.ncbi.nlm.nih.gov/12683469/" target="_blank" rel="noreferrer"><b>01</b><div><strong>Van Dongen i wsp. — chroniczna restrykcja snu</strong><small>Skumulowane skutki 4, 6 i 8 godzin możliwości snu</small></div><em>↗</em></a>
-                    <a href="https://doi.org/10.1046/j.1365-2869.2003.00337.x" target="_blank" rel="noreferrer"><b>02</b><div><strong>Belenky i wsp. — zależność dawka–reakcja</strong><small>3, 5, 7 i 9 godzin w łóżku oraz późniejsza odbudowa</small></div><em>↗</em></a>
-                    <a href="https://aasm.org/resources/pdf/adultsleepdurationconsensus.pdf" target="_blank" rel="noreferrer"><b>03</b><div><strong>AASM i SRS — konsensus dla dorosłych</strong><small>Regularnie co najmniej 7 godzin; kontekst 9+ godzin</small></div><em>↗</em></a>
-                    <a href="https://pubmed.ncbi.nlm.nih.gov/20585000/" target="_blank" rel="noreferrer"><b>04</b><div><strong>Buxton i wsp. — wrażliwość insulinowa</strong><small>Kontrolowane ograniczenie snu do 5 godzin przez tydzień</small></div><em>↗</em></a>
-                    <a href="https://pubmed.ncbi.nlm.nih.gov/19139325/" target="_blank" rel="noreferrer"><b>05</b><div><strong>Cohen i wsp. — sen a podatność na infekcję</strong><small>Czas i efektywność snu przed ekspozycją na rinowirusa</small></div><em>↗</em></a>
-                    <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC9584849/" target="_blank" rel="noreferrer"><b>06</b><div><strong>Craven i wsp. — wydolność fizyczna</strong><small>Przegląd i metaanaliza skutków ostrej utraty snu</small></div><em>↗</em></a>
-                    <p>Materiał edukacyjny, nie diagnoza ani indywidualna porada medyczna. Potrzeba snu jest osobnicza; przewlekła senność, bezsenność, chrapanie i przerwy oddechu wymagają konsultacji z lekarzem.</p>
+                <footer class="formula-sources sleep-sources">
+                    <span>ŹRÓDŁA / BADANIA, Z KTÓRYCH POCHODZĄ LICZBY</span>
+                    <a href="https://pubmed.ncbi.nlm.nih.gov/12683469/" target="_blank" rel="noreferrer"><b>01</b><div><strong>Van Dongen i wsp. — chroniczna restrykcja snu</strong><small>4, 6 i 8 godzin możliwości snu przez 14 nocy</small></div><em>↗</em></a>
+                    <a href="https://doi.org/10.1046/j.1365-2869.2003.00337.x" target="_blank" rel="noreferrer"><b>02</b><div><strong>Belenky i wsp. — dawka, wynik i odbudowa</strong><small>3, 5, 7 i 9 godzin w łóżku</small></div><em>↗</em></a>
+                    <a href="https://aasm.org/resources/pdf/adultsleepdurationconsensus.pdf" target="_blank" rel="noreferrer"><b>03</b><div><strong>AASM / SRS — konsensus dla dorosłych</strong><small>Regularnie co najmniej 7 godzin snu</small></div><em>↗</em></a>
+                    <a href="https://pubmed.ncbi.nlm.nih.gov/36062257/" target="_blank" rel="noreferrer"><b>04</b><div><strong>Groeger i wsp. — sen a pozytywny nastrój</strong><small>Chroniczne 6 h możliwości snu i poszczególne stany afektywne</small></div><em>↗</em></a>
+                    <a href="https://pubmed.ncbi.nlm.nih.gov/17293859/" target="_blank" rel="noreferrer"><b>05</b><div><strong>Yoo i wsp. — tworzenie nowych wspomnień</strong><small>Noc bez snu, aktywność hipokampa i późniejsze rozpoznawanie</small></div><em>↗</em></a>
+                    <a href="https://www.nature.com/articles/nature02223" target="_blank" rel="noreferrer"><b>06</b><div><strong>Wagner i wsp. — sen inspiruje wgląd</strong><small>Ukryta reguła zadania po śnie i po czuwaniu</small></div><em>↗</em></a>
+                    <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC9584849/" target="_blank" rel="noreferrer"><b>07</b><div><strong>Craven i wsp. — sprawność fizyczna</strong><small>Metaanaliza ostrej utraty snu; 227 wyników</small></div><em>↗</em></a>
+                    <p>Materiał edukacyjny, nie diagnoza ani indywidualny plan medyczny lub treningowy. Liczby opisują warunki konkretnych badań; nie są automatyczną prognozą dla pojedynczej osoby.</p>
                 </footer>
             </div>
         </div>
@@ -708,6 +716,8 @@
     private LifeArea Area(AreaKey key) => Dashboard!.Areas.First(area => area.Key == key);
 
     private static string TaskWord(int count) => count == 1 ? "zadanie" : count is >= 2 and <= 4 ? "zadania" : "zadań";
+
+    private static string FormatKg(double value) => $"{value:0.#} kg";
 
     private void SelectAreaTasks(AreaKey area)
     {
