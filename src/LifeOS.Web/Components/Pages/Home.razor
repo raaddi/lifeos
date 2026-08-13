@@ -136,6 +136,9 @@
                     case "Obszary życia":
                         @AreasView()
                         break;
+                    case "Formula":
+                        @FormulaView()
+                        break;
                 }
             }
         </main>
@@ -165,7 +168,8 @@
     [
         new("NA CO DZIEŃ", [new("Dzisiaj", "home", "Dzisiaj"), new("Zadania", "tasks", "Zadania"), new("Kalendarz", "calendar", "Kalendarz")]),
         new("ZAPISZ I PAMIĘTAJ", [new("Notatki", "notes", "Notatki"), new("Przypomnienia", "bell", "Alerty")]),
-        new("ROZWÓJ I DANE", [new("Projekty i cele", "target", "Projekty"), new("Rutyny", "repeat", "Rutyny"), new("Arkusze i rejestry", "table", "Rejestry"), new("Obszary życia", "areas", "Obszary")])
+        new("ROZWÓJ I DANE", [new("Projekty i cele", "target", "Projekty"), new("Rutyny", "repeat", "Rutyny"), new("Arkusze i rejestry", "table", "Rejestry"), new("Obszary życia", "areas", "Obszary")]),
+        new("WIEDZA", [new("Formula", "formula", "Formula")])
     ];
 
     private static IEnumerable<NavItem> Navigation => NavigationGroups.SelectMany(group => group.Items);
@@ -181,7 +185,8 @@
         ["Notatki"] = new("TWOJE MYŚLI", "Notatki", "Zapisuj pomysły, decyzje i materiały, zanim zdążą uciec."),
         ["Arkusze i rejestry"] = new("TWOJE DANE", "Arkusze i rejestry", "Finanse, kontakty, nauka i własne zestawienia w czytelnej formie."),
         ["Rutyny"] = new("DOBRE NAWYKI", "Rutyny", "Małe powtarzalne działania, które porządkują dzień i oszczędzają energię."),
-        ["Obszary życia"] = new("SZERSZY OBRAZ", "Obszary życia", "Sprawdź, które części życia mają się dobrze, a które potrzebują uwagi.")
+        ["Obszary życia"] = new("SZERSZY OBRAZ", "Obszary życia", "Sprawdź, które części życia mają się dobrze, a które potrzebują uwagi."),
+        ["Formula"] = new("BIBLIOTEKA SYSTEMU", "Formula", "Nauka o tym, jak ciało i umysł zamieniają codzienne decyzje w wynik.")
     };
 
     private ViewHeading ViewCopy => Headings[_view];
@@ -267,8 +272,9 @@
             .ToArray();
     }
 
-    private RenderFragment DashboardView() => @<text>
-        <section class="day-overview">
+    private RenderFragment DashboardView() => @<div class="home-command">
+        <section class="home-zone">
+            <header class="zone-heading"><span><i></i>01 / TERAZ</span><p>Jedna rzecz, która ma dziś pierwszeństwo.</p></header>
             <article class="focus-card">
                 @if (Dashboard!.Tasks.FirstOrDefault(task => !task.IsCompleted) is { } focusTask)
                 {
@@ -290,21 +296,25 @@
                     <footer><button class="focus-done" type="button" @onclick='() => OpenComposer("Zadania")'>+ Dodaj zadanie</button></footer>
                 }
             </article>
-
-            <aside class="day-pulse" aria-label="Podsumowanie dnia">
-                <button type="button" @onclick='() => SetView("Zadania")'><span class="pulse-icon blue">@Icon("tasks")</span><p><strong>@Dashboard.OpenTasks</strong><small>@TaskWord(Dashboard.OpenTasks) czeka</small></p><em>→</em></button>
-                <button type="button" @onclick='() => SetView("Rutyny")'><span class="pulse-icon green">@Icon("repeat")</span><p><strong>@Dashboard.CompletedRoutines/@Dashboard.Routines.Count</strong><small>rutyn zrobionych</small></p><em>→</em></button>
-                <button type="button" @onclick='() => SetView("Przypomnienia")'><span class="pulse-icon orange">@Icon("bell")</span><p><strong>@ReminderCount</strong><small>spraw do pamiętania</small></p><em>→</em></button>
-            </aside>
         </section>
 
-        <section class="dashboard-grid">
-            <article class="panel tasks-panel"><header><div><span>PLAN NA DZIŚ</span><h2>Kolejne kroki</h2></div><button type="button" @onclick='() => SetView("Zadania")'>Wszystkie zadania →</button></header><div class="task-list">@foreach (var task in Dashboard.Tasks.Where(task => !task.IsCompleted).Take(4)) { @TaskRow(task) }</div></article>
-            <article class="panel notes-panel friendly-note"><header><div><span>SZYBKI ZAPIS</span><h2>Zapisz, zanim ucieknie</h2></div><b>@Dashboard.Notes.Count</b></header>@NoteComposer()<div class="note-preview">@if (Dashboard.Notes.Count == 0) { <p>Tu pojawią się Twoje ostatnie notatki.</p> } else { @foreach (var note in Dashboard.Notes.Take(2)) { <p>@note.Content</p> } }</div></article>
-            <article class="panel routines-panel"><header><div><span>CODZIENNY RYTM</span><h2>Rutyny</h2></div><button type="button" @onclick='() => SetView("Rutyny")'>Zobacz wszystkie →</button></header><div class="routine-list">@foreach (var routine in Dashboard.Routines) { <button type="button" class="@(routine.IsCompletedToday ? "done" : "")" @onclick="() => ToggleRoutineAsync(routine.Id)"><i>@(routine.IsCompletedToday ? "✓" : "")</i><span><strong>@routine.Name</strong><small>@routine.Schedule</small></span></button> }</div></article>
-            <article class="panel areas-panel"><header><div><span>SZERSZY OBRAZ</span><h2>Jak mają się Twoje obszary?</h2></div><button type="button" @onclick='() => SetView("Obszary życia")'>Pełny widok →</button></header><div class="compact-areas">@foreach (var area in Dashboard.Areas) { <button type="button" class="@(area.Key == _selectedArea ? "active" : "")" style="--area-color: @area.Color" @onclick="() => _selectedArea = area.Key"><span><i></i>@area.Name</span><em><b style="width: @(area.Score)%"></b></em><strong>@area.Score</strong></button> }</div></article>
+        <section class="home-zone next-zone">
+            <header class="zone-heading"><span><i></i>02 / PÓŹNIEJ</span><p>Tylko trzy następne kroki. Pełny system pozostaje w swoich modułach.</p></header>
+            <article class="panel next-actions">
+                <header><div><span>KOLEJKA</span><h2>Następne działania</h2></div><button type="button" @onclick='() => SetView("Zadania")'>Otwórz plan →</button></header>
+                <div class="task-list">
+                    @foreach (var task in Dashboard.Tasks.Where(task => !task.IsCompleted).Skip(1).Take(3))
+                    {
+                        @TaskRow(task)
+                    }
+                    @if (Dashboard.Tasks.Count(task => !task.IsCompleted) <= 1)
+                    {
+                        <div class="quiet-empty"><span>02</span><p><strong>Kolejka jest czysta.</strong> Dodaj następny krok dopiero, gdy naprawdę go potrzebujesz.</p></div>
+                    }
+                </div>
+            </article>
         </section>
-    </text>;
+    </div>;
 
     private RenderFragment TasksView() => @<section class="panel manager-panel">
         <header><div><span>POSTĘP DNIA</span><h2>@Dashboard!.TaskProgress% zrealizowane</h2></div><b>@Dashboard.OpenTasks otwarte</b></header>
@@ -399,6 +409,123 @@
         }
     </section>;
 
+    private RenderFragment FormulaView() => @<section class="formula-layout">
+        <aside class="formula-library">
+            <div class="formula-library-title"><span>FORMULA / INDEX</span><strong>Rozdziały</strong></div>
+            <button class="active" type="button"><span>01</span><div><strong>Dieta</strong><small>Odżywianie i adaptacja</small></div><em>12 min</em></button>
+            <button class="locked" type="button" disabled><span>02</span><div><strong>Sen</strong><small>Regeneracja i pamięć</small></div><em>Wkrótce</em></button>
+            <div class="formula-principle"><span>ZASADA FORMULA</span><p>Najpierw zrozum mechanizm. Potem zaprojektuj system, który działa również w słabszy dzień.</p></div>
+        </aside>
+
+        <article class="formula-article">
+            <header class="formula-hero">
+                <div class="formula-code"><span>FORMULA</span><i></i><span>01</span></div>
+                <p class="formula-kicker">FUNDAMENTY WYDAJNOŚCI</p>
+                <h2>Dieta</h2>
+                <p class="formula-lead">Trening daje organizmowi sygnał do zmiany. Dieta dostarcza energii, budulca i warunków, dzięki którym ten sygnał może zostać zamieniony w adaptację.</p>
+                <div class="formula-meta"><span>Poziom: fundament</span><span>Czas: 12 min</span><span>Aktualizacja: 2026</span></div>
+            </header>
+
+            <div class="formula-reading">
+                <nav class="article-toc" aria-label="Spis treści artykułu">
+                    <span>W TYM ROZDZIALE</span>
+                    <a href="#formula-experiment">01. Ten sam trening, dwa wyniki</a>
+                    <a href="#formula-energy">02. Energia i makroskładniki</a>
+                    <a href="#formula-quality">03. Jakość i stan zapalny</a>
+                    <a href="#formula-practice">04. Przełożenie na praktykę</a>
+                </nav>
+
+                <div class="article-body">
+                    <section class="article-intro">
+                        <p>Wyobraź sobie dwie osoby wykonujące ten sam plan. Obie trenują ciężko, śpią podobną liczbę godzin i mają zbliżone predyspozycje. Pierwsza je przypadkowo: raz za mało, raz bardzo dużo, większość kalorii czerpie z produktów wysokoprzetworzonych. Druga pokrywa zapotrzebowanie energetyczne, rozkłada białko w ciągu dnia, dopasowuje węglowodany do wysiłku i regularnie je warzywa, owoce, pełne ziarna, strączki oraz wartościowe tłuszcze.</p>
+                        <p>Na pojedynczym treningu różnica może być ledwie widoczna. Po kilku miesiącach kumuluje się jednak w jakości kolejnych sesji, szybkości odbudowy zapasów, utrzymaniu masy mięśniowej, odporności i ryzyku przerw w treningu.</p>
+                    </section>
+
+                    <section id="formula-experiment" class="article-section">
+                        <span class="section-number">01 / MODEL</span>
+                        <h3>Ten sam bodziec nie gwarantuje tego samego wyniku</h3>
+                        <p>Mięśnie nie rosną w trakcie serii. Trening chwilowo zaburza równowagę organizmu: zużywa glikogen, zwiększa obrót białek i wywołuje kontrolowaną odpowiedź zapalną. Adaptacja zachodzi później — jeśli ciało ma z czego odbudować uszkodzone struktury i przywrócić gotowość do kolejnego wysiłku.</p>
+
+                        <div class="athlete-comparison">
+                            <article class="athlete-case weak">
+                                <header><span>A</span><div><strong>Ciężki trening + przypadkowa dieta</strong><small>Bodziec bez stabilnego zaplecza</small></div></header>
+                                <ul>
+                                    <li>Nierówna podaż energii i częstsze „puste” treningi</li>
+                                    <li>Białko zebrane głównie w jednym posiłku</li>
+                                    <li>Mało błonnika, potasu, magnezu i związków roślinnych</li>
+                                    <li>Większa zmienność energii, sytości i jakości regeneracji</li>
+                                </ul>
+                            </article>
+                            <article class="athlete-case strong">
+                                <header><span>B</span><div><strong>Ciężki trening + odżywczy system</strong><small>Bodziec wsparty materiałem do adaptacji</small></div></header>
+                                <ul>
+                                    <li>Energia dopasowana do obciążenia i celu</li>
+                                    <li>Pełnowartościowe białko rozłożone w ciągu dnia</li>
+                                    <li>Węglowodany dostępne wtedy, gdy wymaga ich wysiłek</li>
+                                    <li>Codzienna różnorodność roślin i wartościowych tłuszczów</li>
+                                </ul>
+                            </article>
+                        </div>
+
+                        <div class="formula-equation"><span>ADAPTACJA</span><strong>trening × energia × budulec × regeneracja</strong><p>Jeśli jeden z mnożników przez długi czas pozostaje bliski zeru, większa ilość treningu nie naprawia całego równania.</p></div>
+                    </section>
+
+                    <section id="formula-energy" class="article-section">
+                        <span class="section-number">02 / PALIWO I BUDULEC</span>
+                        <h3>Białko, tłuszcze i węglowodany mają różne zadania</h3>
+                        <p>„Idealny rozkład B/T/W” nie jest jedną stałą proporcją dla wszystkich. Zależy od masy ciała, rodzaju sportu, objętości treningu i celu. Liczy się hierarchia: najpierw odpowiednia energia, następnie wystarczająca ilość makroskładników, a dopiero później precyzyjny timing.</p>
+
+                        <div class="macro-grid">
+                            <article><span class="macro-symbol protein">B</span><div><strong>Białko</strong><p>Dostarcza aminokwasów do przebudowy mięśni, enzymów i wielu struktur organizmu. Dla większości osób regularnie trenujących literatura sportowa wskazuje około <b>1,4–2,0 g/kg masy ciała na dobę</b>; potrzeby mogą być wyższe w deficycie energii.</p></div></article>
+                            <article><span class="macro-symbol carbs">W</span><div><strong>Węglowodany</strong><p>Są głównym źródłem szybko dostępnej energii podczas wysiłku o wyższej intensywności. Ich ilość warto zmieniać wraz z obciążeniem: więcej przy ciężkich i długich sesjach, mniej w lekkie dni — bez automatycznego demonizowania tej grupy.</p></div></article>
+                            <article><span class="macro-symbol fats">T</span><div><strong>Tłuszcze</strong><p>Wspierają błony komórkowe, produkcję hormonów i wchłanianie witamin A, D, E i K. Ważna jest jakość: oliwa, orzechy, pestki, awokado i ryby powinny częściej zastępować tłuszcze trans oraz nadmiar tłuszczów nasyconych.</p></div></article>
+                        </div>
+
+                        <aside class="science-note"><span>WAŻNIEJSZE NIŻ „CZYSTA MICHA”</span><p>Zbyt niska dostępność energii może uderzać w hormony, kości, odporność, samopoczucie i wydolność — także u mężczyzn. Organizm nie interpretuje niedojadania jako dyscypliny; interpretuje je jako brak zasobów.</p></aside>
+                    </section>
+
+                    <section id="formula-quality" class="article-section">
+                        <span class="section-number">03 / JAKOŚĆ ŚRODOWISKA</span>
+                        <h3>„Antyzapalna” oznacza wzorzec, nie magiczny produkt</h3>
+                        <p>Stan zapalny po treningu jest częścią adaptacji — nie należy próbować wyzerować go za wszelką cenę. Problemem jest raczej przewlekłe środowisko tworzone przez niedobór energii i mikroskładników, małą ilość snu, stres oraz dietę opartą głównie na produktach wysokoprzetworzonych.</p>
+                        <p>Odżywczy wzorzec przypominający dietę śródziemnomorską dostarcza błonnika, nienasyconych kwasów tłuszczowych i wielu związków bioaktywnych. W praktyce oznacza dużą różnorodność warzyw i owoców, pełne ziarna, strączki, orzechy, nasiona, oliwę oraz regularne źródła omega‑3. To nie „detoks”, lecz codzienne kształtowanie środowiska metabolicznego.</p>
+
+                        <div class="nutrient-band">
+                            <div><strong>≥ 400 g</strong><span>warzyw i owoców dziennie</span></div>
+                            <div><strong>≥ 25 g</strong><span>naturalnego błonnika dziennie</span></div>
+                            <div><strong>różnorodność</strong><span>kolorów, źródeł i stopnia przetworzenia</span></div>
+                        </div>
+
+                        <blockquote><p>Warzywa i owoce nie są dodatkiem dekoracyjnym do makro. Pomagają domknąć pulę witamin, minerałów, błonnika i związków roślinnych potrzebnych do normalnego działania układu odpornościowego, nerwowego oraz pokarmowego.</p></blockquote>
+                    </section>
+
+                    <section id="formula-practice" class="article-section">
+                        <span class="section-number">04 / SYSTEM</span>
+                        <h3>Jak przełożyć teorię na zwykły dzień</h3>
+                        <ol class="formula-protocol">
+                            <li><span>01</span><div><strong>Pokryj energię</strong><p>Nie zaczynaj od suplementów, jeśli regularnie nie dojadasz względem treningu i regeneracji.</p></div></li>
+                            <li><span>02</span><div><strong>Rozłóż białko</strong><p>Umieść pełnowartościowe źródło w 3–5 posiłkach, zamiast nadrabiać całość późnym wieczorem.</p></div></li>
+                            <li><span>03</span><div><strong>Dopasuj węglowodany</strong><p>Największe porcje kieruj w okolice najbardziej wymagających jednostek treningowych.</p></div></li>
+                            <li><span>04</span><div><strong>Buduj kolor i różnorodność</strong><p>Każdego dnia jedz kilka rodzajów warzyw i owoców oraz rotuj źródła białka, zbóż i tłuszczów.</p></div></li>
+                            <li><span>05</span><div><strong>Oceniaj trend</strong><p>Patrz na energię, głód, sen, progres treningowy i częstotliwość infekcji w skali tygodni, nie pojedynczego posiłku.</p></div></li>
+                        </ol>
+
+                        <div class="article-conclusion"><span>WNIOSKI</span><h3>Dobra dieta nie zastępuje treningu. Sprawia, że trening ma z czego zadziałać.</h3><p>Perfekcja nie jest wymagana. Przewagę daje powtarzalny system, w którym większość posiłków dostarcza potrzebnej energii i składników, a mniej odżywcze jedzenie pozostaje świadomym dodatkiem — nie fundamentem.</p></div>
+                    </section>
+
+                    <footer class="formula-sources">
+                        <span>ŹRÓDŁA I DALSZA LEKTURA</span>
+                        <a href="https://www.who.int/news-room/fact-sheets/detail/healthy-diet" target="_blank" rel="noreferrer"><b>01</b><div><strong>WHO — Healthy diet</strong><small>Zasady zdrowej diety, błonnik, warzywa i owoce</small></div><em>↗</em></a>
+                        <a href="https://pubmed.ncbi.nlm.nih.gov/28642676/" target="_blank" rel="noreferrer"><b>02</b><div><strong>ISSN — Protein and exercise</strong><small>Stanowisko dotyczące podaży i dystrybucji białka</small></div><em>↗</em></a>
+                        <a href="https://pubmed.ncbi.nlm.nih.gov/26891166/" target="_blank" rel="noreferrer"><b>03</b><div><strong>ACSM — Nutrition and Athletic Performance</strong><small>Żywienie, wydolność i regeneracja sportowa</small></div><em>↗</em></a>
+                        <a href="https://bjsm.bmj.com/content/57/17/1073" target="_blank" rel="noreferrer"><b>04</b><div><strong>IOC — Relative Energy Deficiency in Sport</strong><small>Dostępność energii, zdrowie i zdolność do treningu</small></div><em>↗</em></a>
+                        <p>Materiał edukacyjny, nie indywidualna porada medyczna ani dietetyczna. Przy chorobach, objawach niedoborów lub intensywnym sporcie plan warto ustalić z lekarzem i dietetykiem sportowym.</p>
+                    </footer>
+                </div>
+            </div>
+        </article>
+    </section>;
+
     private RenderFragment TaskRow(LifeTask task) => @<button type="button" class="task-row @(task.IsCompleted ? "done" : "")" @onclick="() => ToggleTaskAsync(task.Id)"><i>@(task.IsCompleted ? "✓" : "")</i><span><strong>@task.Title</strong><small><b style="background: @Area(task.Area).Color"></b>@Area(task.Area).Name · @task.DurationMinutes min</small></span><em>@(task.IsCompleted ? "Gotowe" : "Do zrobienia")</em></button>;
 
     private RenderFragment TaskComposer() => @<div class="task-composer"><select @bind="_selectedArea">@foreach (var area in Dashboard!.Areas) { <option value="@area.Key">@area.Name</option> }</select><input @bind="_newTask" @bind:event="oninput" placeholder="Dodaj konkretne zadanie…" /><select @bind="_duration" aria-label="Czas zadania"><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select><button type="button" @onclick="AddTaskAsync">Dodaj zadanie</button></div>;
@@ -429,6 +556,7 @@
         "wallet" => "¤",
         "contacts" => "♙",
         "learning" => "◇",
+        "formula" => "ƒ",
         _ => "·"
     };
 
